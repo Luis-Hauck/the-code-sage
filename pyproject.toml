@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "the-code-sage"
+version = "0.1.0"
+description = "Um bot para Discord focado em gamificação e ajuda mútua para comunidades de programação."
+authors = ["Luis Gustavo Hauck <hauck.luis@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "app", from = "src" },
+    { include = "bot", from = "src" },
+    { include = "cogs", from = "src" },
+    { include = "utils", from = "src" },
+    { include = "database", from = "src" },
+    { include = "api", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.12"
+discord-py = "^2.3.2"
+python-dotenv = "^1.0.1"
+
+
+[tool.poetry.group.dev.dependencies]
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
