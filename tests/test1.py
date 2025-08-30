@@ -2,13 +2,12 @@ import discord
 import os
 from dotenv import load_dotenv
 from discord.ext import commands
-
+from bot.client import TheCodeSageBot
 load_dotenv()
 
-# Recebe todas as permissões
-intents = discord.Intents.all()
 
-bot = commands.Bot('/', intents=intents)
+
+bot = TheCodeSageBot()
 
 
 @bot.event

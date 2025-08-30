@@ -2,6 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from app.config import GUILD_ID
+from app.logging import logger
 
 
 class TheCodeSageBot(commands.Bot):
@@ -22,9 +23,10 @@ class TheCodeSageBot(commands.Bot):
                     try:
                         # Carregamos o cog, usamos [:-3] para retirar .py do arquivo
                         await self.load_extension(f'bot.cogs.{filename[:-3]}')
+                        logger.info(f'"bot.cogs.{filename[:-3]}" carregado com sucesso!')
 
                     except Exception as e:
-                        print(f'Falha ao carregar o cog {filename[:-3]}')
+                        logger.warning(f'Falha ao carregar o cog {filename[:-3]}')
 
             # Sincronizamos os slaah commands com o discord
 
@@ -39,7 +41,7 @@ class TheCodeSageBot(commands.Bot):
             self.tree.copy_global_to(guild=guild_obj)
             await self.tree.sync(guild=guild_obj)
 
-            print(f'Setip hook concluído')
+            logger.info(f'Hook criado com sucesso!')
 
 
 
