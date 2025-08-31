@@ -1,7 +1,7 @@
 import os
 import discord
 from discord.ext import commands
-from app.config import GUILD_ID
+from src.app.config import GUILD_ID
 import logging
 
 
@@ -29,7 +29,7 @@ class TheCodeSageBot(commands.Bot):
                     logger.info(f'"src.cogs.{filename[:-3]}" carregado com sucesso!')
 
                 except Exception as e:
-                    logger.warning(f'Falha ao carregar o cog {filename[:-3]}')
+                    logger.warning(f'Falha ao carregar o cog {filename[:-3]}: {e}')
 
         # Sincronizamos os slaah commands com o discord
 
