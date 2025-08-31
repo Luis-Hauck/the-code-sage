@@ -7,7 +7,7 @@ def setup_logging():
     """Configura o sistema de logging"""
 
     # Garante a existência da pasta logs
-    if not os.path.exists('logs'):
+    if not os.path.exists('./logs'):
         os.makedirs('logs')
 
     # Define os formatos padrões dos logs
