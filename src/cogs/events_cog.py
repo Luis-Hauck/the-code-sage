@@ -1,24 +1,58 @@
-@bot.event
-async def on_thread_create(thread: discord.Thread):
-    creator = thread.owner
-    if thread.parent_id == 1402409945672060928:
-        try:
+import logging
+from discord.ext import commands
+import discord
 
-            print(f'Novo topico criado por {creator}')
-            starter_message = await thread.fetch_message(thread.id)
-            print(starter_message)
-            minha_embed = discord.Embed(
-                title='# Post Criado',
-                description=f'Enigma;;;............... {starter_message.content}',
-                color=discord.Color.from_rgb(88, 55, 250)
+logger = logging.getLogger(__name__)
 
-            )
-            imagem = discord.File(r"D:\Projects\the-code-sage\assets\images\img.png", "img.png")
-            minha_embed.set_image(url='attachment://img.png')
-            await starter_message.reply(embed=minha_embed, file=imagem)
+dados_thread = {}
 
-        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
-            await thread.send(f'`{creator.name} é preciso colocar uma descrição')
+# Criamos a classe dos eventos que herda commands.Cog
+class EventsCog(commands.Cog):
+    # Recebe o bot para interagirmos com ele
+    def __init__(self, bot:commands.Bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print(f'Abra-kadabra 001001')
+        logger.info(f'Abra-kadabra 001001')
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member:discord.Member):
+        """
+            Envia uma mensagem de boas vindas no privado do membro
+        Args:
+            self():
+            member(discord.Member): Recebe as informações do usuário do discord.
+
+        Returns:
+            Envia a mensagem de boas vindas ao úsuario.
+
+            Se o úsario tem bloqueio de mensagens diretas retorna um erro.
+
+        """
+
+        await member.send(f'Olá seja bem-vindo ao canal {member.name}')
+
+        # Logica de verificar se um usuario que saiu voltou e ativar ou criar um novo
+
+    @commands.Cog.listener()
+    async def on_thread_create(self, thread:discord.Thread):
+        # Lógica de criar uma sessão com os dados do criar e a quantidade de pessoas avaliadas
+        criador = thread.owner
+        if thread.parent_id ==1402409945672060928:
+            pass
 
 
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member:discord.Member):
+        """Logica de inativar o usuário que saiu do servidor"""
+
+
+
+# Função responsável por carregar os cogs
+async def setup(bot: commands.Bot):
+    await bot.add_cog(EventsCog(bot))
+    logger.info('Cog de eventos carregado com sucesso!')
 
