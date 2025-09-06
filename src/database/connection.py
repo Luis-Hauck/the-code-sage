@@ -10,10 +10,10 @@ async def connect_to_database():
     """
     try:
         client = AsyncMongoClient(MONGO_URI)
-        db = client.the_code_sage_db
-        logger.info('Conexão com MongoDB estabelecida.')
-        return db
+        await client.admin.command('ping')
+        logger.info('Cliente criado!')
+        return client
 
     except Exception as e:
-        logger.warning(f'Ocorreu um erro na conexão: {e}')
+        logger.warning(f'Ocorreu um erro na criação do cleinet: {e}')
         raise
