@@ -1,8 +1,9 @@
 import os
 import discord
 from discord.ext import commands
-from src.app.config import GUILD_ID
 import logging
+from src.app.config import GUILD_ID
+from src.database.connection import connect_to_database
 
 
 logger = logging.getLogger(__name__)
@@ -14,9 +15,17 @@ class TheCodeSageBot(commands.Bot):
         super().__init__(command_prefix='/', # Define o comando padrão
                          intents=discord.Intents.all() # Define as intents do bot
                          )
+        self.db_client = None
+        self.db = None
 
     async def setup_hook(self):
         """"O hook é cahamado automaticamente antes do bot logar"""
+
+        # Conecta ao banco de dados e armazena a conexão na instância do bot
+        self.db_client = await connect_to_database()
+        self.db = self.db_client.get_database('the_code_sage_db')
+
+
 
         #Carregamos todos os Cogs da pasta cogs
         # Percorremos cada arquivo da pasat cogs:
@@ -46,5 +55,17 @@ class TheCodeSageBot(commands.Bot):
 
         logger.info(f'Hook criado com sucesso!')
 
+
+    async def close(self):
+        """Hook chamado quando o bot é desligado"""
+        logger.info('Encerrando o bot...')
+
+        if self.db:
+            self.db_client.close()
+            logger.info('Conexão com MongoDB encerrada.')
+
+        await super().close()
+
+        logger.info('Bot encerrado com sucesso!')
 
 
