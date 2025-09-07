@@ -1,6 +1,14 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List, Optional
+from enum import Enum
+
+class UserStatus(str, Enum):
+    ACTIVE = 'ativo'
+    INACTIVE = 'inativo'
+    BANNED = 'banido'
+    MUTED = 'silenciado'
+
 
 class UserModel(BaseModel):
     """
@@ -11,9 +19,12 @@ class UserModel(BaseModel):
     xp: int = 0
     coins: int
     inventory: List[str] = []
-    is_active = bool = True
+    status: UserStatus = Field(default=UserStatus.ACTIVE)
     joined_at: datetime
     roles_id: List[int] = []
+
+    class Config:
+        populate_by_name = True
 
 class EvaluatorModel(BaseModel):
     """
@@ -22,7 +33,6 @@ class EvaluatorModel(BaseModel):
     user_id: int
     username: str
     rank: str
-
 
 class MissionsModel(BaseModel):
     """
@@ -40,6 +50,9 @@ class MissionsModel(BaseModel):
     created_at: datetime
     status: str
     evaluators: List[EvaluatorModel] = []
+
+    class Config:
+        populate_by_name = True
 
 class ItemsModel(BaseModel):
     """
@@ -61,4 +74,7 @@ class ItemsModel(BaseModel):
     type: str
     role_id_to_give: Optional[int] = None
     expire_date: datetime
+
+    class Config:
+        populate_by_name = True
 
