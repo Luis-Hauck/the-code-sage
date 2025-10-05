@@ -19,9 +19,10 @@ class UserModel(BaseModel):
     xp: int = 0
     coins: int
     inventory: List[str] = []
+    equipped_item_id: Optional[int] = None
     status: UserStatus = Field(default=UserStatus.ACTIVE)
     joined_at: datetime
-    roles_id: List[int] = []
+    role_ids: List[int] = []
 
     class Config:
         populate_by_name = True
