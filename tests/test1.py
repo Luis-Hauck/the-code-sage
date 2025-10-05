@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from bot.client import TheCodeSageBot
 load_dotenv()
+from src.database.connection import connect_to_database
+from src.utils.repositories.user_repository import UserRepository
+import datetime
 
 
 
@@ -18,6 +21,7 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member:discord.Member):
+
     await member.send(f'Olá seja bem-vindo ao canal {member.name}')
 
 
