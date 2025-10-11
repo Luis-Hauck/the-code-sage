@@ -114,3 +114,55 @@ class UserRepository:
 
             return None
 
+    async def equip_item(self, user_id: int, item_id: int) -> bool:
+        """
+        Equipa um item no usuário.
+
+        Args:
+            user_id: ID do usuário
+            item_id: ID do item a ser equipado
+
+        Returns:
+            bool: True se equipou com sucesso, False caso contrário
+        """
+        try:
+            # Verifica se o usuário existe
+            user = await self.get_by_id(user_id)
+
+            if not user:
+                logger.warning(f'Usuário {user_id} não encontrado ao tentar equipar item')
+                return False
+
+            # Verifica se o item está no inventário
+            if item_id not in user.inventory:
+                logger.warning(f'Item {item_id} não está no inventário do usuário {user_id}')
+                return False
+
+            # Verifica se o item já está equipado (opcional, mas recomendado)
+            if user.equipped_item_id == item_id:
+                logger.info(f'Item {item_id} já está equipado no usuário {user_id}')
+                return True
+
+            # Atualiza o item equipado
+            result = await self.collection.update_one(
+                {'_id': user_id},
+                {'$set': {'equipped_item_id': item_id}}
+            )
+
+            if result.modified_count > 0:
+                previous_item = user.equipped_item_id
+                logger.info(
+                    f'Usuário {user_id} equipou item {item_id} '
+                    f'(anterior: {previous_item or "nenhum"})'
+                )
+                return True
+
+            logger.warning(f'Falha ao equipar item {item_id} para usuário {user_id}')
+            return False
+
+        except Exception as e:
+            logger.error(
+                f'Erro inesperado ao equipar item {item_id} para usuário {user_id}: {e}',
+                exc_info=True
+            )
+            return False
