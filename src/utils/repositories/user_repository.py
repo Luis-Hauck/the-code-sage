@@ -166,3 +166,47 @@ class UserRepository:
                 exc_info=True
             )
             return False
+
+    async def unequip_item(self, user_id: int) -> bool:
+        """
+        Remove o item equipado do usuário.
+
+        Args:
+            user_id: ID do usuário
+        Returns:
+            bool: True se desequipou com sucesso, False caso contrário
+        """
+
+        try:
+            # Verifica se o usuário existe e tem item equipado
+            user = await self.get_by_id(user_id)
+
+            if not user:
+                logger.warning(f'Usuário {user_id} não encontrado ao tentar desequipar item')
+                return False
+
+            if user.equipped_item_id is None:
+                logger.info(f'ℹ️ Usuário {user_id} já não tem item equipado')
+                return True
+
+            # Salva o ID do item que será desequipado para o log
+            item_id = user.equipped_item_id
+
+            # Remove o item equipado
+            result = await self.collection.update_one(
+                {'_id': user_id},
+                {'$set': {'equipped_item_id': None}}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f'Usuário {user_id} desequipou item {item_id}')
+                return True
+
+            logger.warning(f'Nenhum item para desequipar para o usuário {user_id}')
+            return False
+
+        except Exception as e:
+            return False
+            logger.error(f'Erro ao desequipar item de {user_id}: {e}', exc_info=True)
+
+
