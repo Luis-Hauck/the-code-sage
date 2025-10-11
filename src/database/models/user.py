@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 from enum import Enum
 
 class UserStatus(str, Enum):
@@ -18,7 +18,7 @@ class UserModel(BaseModel):
     username: str
     xp: int = 0
     coins: int
-    inventory: List[str] = []
+    inventory: Dict[int, int] = {}
     equipped_item_id: Optional[int] = None
     status: UserStatus = Field(default=UserStatus.ACTIVE)
     joined_at: datetime
