@@ -80,7 +80,37 @@ class UserRepository:
             logger.error(f'Falha ao incremenatar xp e moedas ao user {user_id}: {e}')
             return False
 
+    async def get_by_id(self, user_id:int):
+        """
+        Busca um um usuário pelo id
 
+        Args:
+        user_id: ID do usuário a ser buscado
 
+        Returns:
+        UserModel se encontrado, None se não encontrado ou em caso de erro
+        """
 
+        try:
+            user_data = await self.collection.find_one({'_id': user_id})
+
+            if not user_data:
+
+                logger.info(f'Usuário {user_id} não encontrado')
+
+                return None
+
+            return UserModel(**user_data)
+
+        except ValidationError as e:
+
+            logger.error(f'Dados inválidos para o usuário {user_id}: {e}')
+
+            return None
+
+        except Exception as e:
+
+            logger.error(f'Erro ao buscar usuário {user_id}: {e}', exc_info=True)
+
+            return None
 
