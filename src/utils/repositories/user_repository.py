@@ -36,14 +36,26 @@ class UserRepository:
             return False
 
     async def update_status(self, user_id: int, status: UserStatus) -> bool:
+        """
+        Atualiza o status de um usuário.
+
+        Args:
+            user_id: ID do usuário
+            status: Novo status (ACTIVE, INACTIVE, BANNED, MUTED)
+
+        Returns:
+            bool: True se atualizou com sucesso, False caso contrário
+        """
 
         try:
             result = await self.collection.update_one(
                 {'_id': user_id},
                 {'$set': {'status': status}}
             )
-            logger.info(f'Status do user {user_id} atualizado!')
-            return result.modified_count > 0
+
+            if result.modified_count > 0:
+                logger.info(f'Status do user {user_id} atualizado!')
+                return True
 
         except Exception as e:
             logger.error(f'Falha ao atualizar os status do user {user_id}: {e}')
