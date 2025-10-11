@@ -13,12 +13,23 @@ class UserRepository:
         self.collection = db.users
 
     async def create(self, user_model:UserModel) -> bool:
-        """Cria um novo usuário"""
+        """
+        Cria um novo usuário no banco de dados.
+
+        Args:
+            user_model: Modelo do usuário a ser criado
+
+        Returns:
+            bool: True se criou com sucesso, False caso contrário
+        """
+
         try:
             user_data = user_model.model_dump(by_alias=True)
-            await self.collection.insert_one(user_data)
-            logger.info('Usuário cdastrado')
-            return True
+            result = await self.collection.insert_one(user_data)
+
+            if result.inserted_id:
+                logger.info('Usuário cadastrado')
+                return True
 
         except Exception as e:
             logger.error(f'Erro inesperado ao criar o usuário: {e}', exc_info=True)
