@@ -1,8 +1,5 @@
-
-from pymongo.synchronous.database import Database
-from pydantic import ValidationError
+from pymongo.database import Database
 import logging
-
 from src.database.models.user import UserModel, UserStatus
 
 logger = logging.getLogger('__name__')
@@ -55,16 +52,27 @@ class UserRepository:
                 {'_id': user_id},
                 {'$set': {'status': status}}
             )
-
-            if result.modified_count > 0:
-                logger.info(f'Status do user {user_id} atualizado!')
-                return True
+            return result.acknowledged
 
         except Exception as e:
             logger.error(f'Falha ao atualizar os status do user {user_id}: {e}')
             return False
 
     async def add_xp_coins(self, user_id:int, xp:float, coins:float):
+        """
+        Adicona XP e moedas ao usuário pelo ID.
+
+        Args:
+            user_id: ID do usuário
+            xp: Valor de XP a ser adicionado
+            coins: Valor de moedas a ser adicionado
+
+        Returns:
+            bool: True se atualizou com sucesso ou se não tiver dados a serem atualizados, False caso contrário
+        """
+        # Se o xp e moedas forem 0 não prosseguimos
+        if not xp and not coins:
+            return True
         try:
             result = await self.collection.update_one(
                 {'_id': user_id},
@@ -101,10 +109,6 @@ class UserRepository:
                 return None
             return UserModel(**user_data)
 
-        except ValidationError as e:
-            logger.error(f'Dados inválidos para o usuário {user_id}: {e}')
-            return None
-
         except Exception as e:
             logger.error(f'Erro ao buscar usuário {user_id}: {e}', exc_info=True)
             return None
@@ -112,25 +116,31 @@ class UserRepository:
     async def equip_item(self, user_id: int, item_id: int) -> bool:
         """
         Equipa um item no usuário.
-
         Args:
             user_id: ID do usuário
             item_id: ID do item a ser equipado
-
         Returns:
-            bool: True se equipou com sucesso, False caso contrário
+            bool: True se o banco de dados confirmou o recebimento do comando,
+                  False em caso de erro de conexão.
         """
         try:
+            # Converte item_id para string para compatibilidade com o inventário
+            item_key = str(item_id)
+
             # Verifica se o usuário existe
             user = await self.get_by_id(user_id)
-
             if not user:
                 logger.warning(f'Usuário {user_id} não encontrado ao tentar equipar item')
                 return False
 
             # Verifica se o item está no inventário
-            if item_id not in user.inventory:
+            if item_key not in user.inventory:
                 logger.warning(f'Item {item_id} não está no inventário do usuário {user_id}')
+                return False
+
+            # Verifica se há quantidade suficiente do item
+            if user.inventory[item_key] <= 0:
+                logger.warning(f'Usuário {user_id} não possui quantidade suficiente do item {item_id}')
                 return False
 
             # Verifica se o item já está equipado (opcional, mas recomendado)
@@ -138,14 +148,18 @@ class UserRepository:
                 logger.info(f'Item {item_id} já está equipado no usuário {user_id}')
                 return True
 
-            # Atualiza o item equipado
+            # Salva o item anterior para log
+            previous_item = user.equipped_item_id
+
             result = await self.collection.update_one(
-                {'_id': user_id},
+                {
+                    '_id': user_id,
+                    f'inventory.{item_key}': {'$gt': 0}  # Garante que o item ainda está no inventário
+                },
                 {'$set': {'equipped_item_id': item_id}}
             )
 
-            if result.modified_count > 0:
-                previous_item = user.equipped_item_id
+            if result.acknowledged:
                 logger.info(
                     f'Usuário {user_id} equipou item {item_id} '
                     f'(anterior: {previous_item or "nenhum"})'
@@ -169,7 +183,8 @@ class UserRepository:
         Args:
             user_id: ID do usuário
         Returns:
-            bool: True se desequipou com sucesso, False caso contrário
+            bool: True se o banco de dados confirmou o recebimento do comando,
+                  False em caso de erro de conexão.
         """
 
         try:
@@ -193,7 +208,7 @@ class UserRepository:
                 {'$set': {'equipped_item_id': None}}
             )
 
-            if result.modified_count > 0:
+            if result.acknowledged:
                 logger.info(f'Usuário {user_id} desequipou item {item_id}')
                 return True
 
@@ -204,7 +219,7 @@ class UserRepository:
             logger.error(f'Erro ao desequipar item de {user_id}: {e}', exc_info=True)
             return False
 
-    async def add_item_to_inventory(self, user_id: int, item_id: int, quantity: int = 1) -> bool:
+    async def add_item_to_inventory(self, user_id: int, item_id: str, quantity: int = 1) -> bool:
         """
         Adiciona item(s) ao inventário do usuário.
 
@@ -246,7 +261,7 @@ class UserRepository:
             logger.error(f'Erro ao adicionar item {item_id} ao inventário do usuário {user_id}: {e}', exc_info=True)
             return False
 
-    async def remove_item_from_inventory(self, user_id: int, item_id: int, quantity: int = 1) -> bool:
+    async def remove_item_from_inventory(self, user_id: int, item_id: str, quantity: int = 1) -> bool:
         """
         Remove item(s) do inventário do usuário.
 
@@ -313,7 +328,8 @@ class UserRepository:
             return False
 
     async def add_role(self, user_id: int, role_id: int) -> bool:
-        """Adiciona role
+        """
+        Adiciona role ao usuário
         Args:
             user_id: ID do usuário
             role_id: ID do item a ser removido
@@ -321,10 +337,12 @@ class UserRepository:
             bool: True se adcionou com sucesso, False caso contrário
         """
         try:
+            # Adciona o role caso o usuário não tenha
             result = await self.collection.update_one(
                 {'_id': user_id},
                 {'$addToSet': {'role_ids': role_id}}
             )
+            # Se a operação foi realizada
             if result.modified_count > 0:
                 logger.info(f'O cargo {role_id} foi adcionado ao usuário {user_id}')
                 return True
@@ -332,6 +350,31 @@ class UserRepository:
             logger.error(f'Erro ao adicionar role: {e} ao usuário {user_id}', exc_info=True)
             return False
 
-    
+    async def remove_role(self, user_id: int, role_id: int) -> bool:
+        """
+        Remove a role do usuário
+
+        Args:
+            user_id:ID do usuário
+            role_id:ID do cargo a ser removido
+        Returns:
+            bool: True se removeu com sucesso, False caso contrário
+
+        """
+
+        try:
+            # Remove a role
+            result =  await self.collection.update_one(
+                {'_id': user_id},
+                {'$pull': {'role_ids': role_id}}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f'Role {role_id} removida com sucesso do usuário {user_id}')
+                return True
+
+        except Exception as e:
+            logger.error(f'Erro aoremover role: {e} ao usuário {user_id}', exc_info=True)
+            return False
 
 
