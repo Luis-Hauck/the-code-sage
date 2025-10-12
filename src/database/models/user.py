@@ -18,7 +18,7 @@ class UserModel(BaseModel):
     username: str
     xp: int = 0
     coins: int
-    inventory: Dict[int, int] = {}
+    inventory: Dict[str, int] = {}
     equipped_item_id: Optional[int] = None
     status: UserStatus = Field(default=UserStatus.ACTIVE)
     joined_at: datetime

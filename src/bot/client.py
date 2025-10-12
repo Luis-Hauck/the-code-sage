@@ -15,17 +15,19 @@ class TheCodeSageBot(commands.Bot):
         super().__init__(command_prefix='/', # Define o comando padrão
                          intents=discord.Intents.all() # Define as intents do bot
                          )
-        self.db_client = None
         self.db = None
+        self.repositories ={}
 
     async def setup_hook(self):
-        """"O hook é cahamado automaticamente antes do bot logar"""
+        """"O hook é chamado automaticamente antes do bot logar"""
 
         # Conecta ao banco de dados e armazena a conexão na instância do bot
-        self.db_client = await connect_to_database()
-        self.db = self.db_client.get_database('the_code_sage_db')
+        self.db = await connect_to_database()
 
-
+        # Inicializa cada repositório explicitamente
+        #self.repositories["user"] = UserRepository(self.db)
+        #self.repositories["item"] = ItemRepository(self.db)
+        # ... e assim por diante
 
         #Carregamos todos os Cogs da pasta cogs
         # Percorremos cada arquivo da pasat cogs:
