@@ -86,32 +86,24 @@ class UserRepository:
 
         Args:
         user_id: ID do usuário a ser buscado
-
         Returns:
+
         UserModel se encontrado, None se não encontrado ou em caso de erro
         """
-
         try:
             user_data = await self.collection.find_one({'_id': user_id})
 
             if not user_data:
-
                 logger.info(f'Usuário {user_id} não encontrado')
-
                 return None
-
             return UserModel(**user_data)
 
         except ValidationError as e:
-
             logger.error(f'Dados inválidos para o usuário {user_id}: {e}')
-
             return None
 
         except Exception as e:
-
             logger.error(f'Erro ao buscar usuário {user_id}: {e}', exc_info=True)
-
             return None
 
     async def equip_item(self, user_id: int, item_id: int) -> bool:
@@ -186,7 +178,7 @@ class UserRepository:
                 return False
 
             if user.equipped_item_id is None:
-                logger.info(f'ℹ️ Usuário {user_id} já não tem item equipado')
+                logger.info(f'Usuário {user_id} já não tem item equipado')
                 return True
 
             # Salva o ID do item que será desequipado para o log
@@ -208,5 +200,47 @@ class UserRepository:
         except Exception as e:
             return False
             logger.error(f'Erro ao desequipar item de {user_id}: {e}', exc_info=True)
+
+    async def add_item_to_inventory(self, user_id: int, item_id: int, quantity: int = 1) -> bool:
+        """
+        Adiciona item(s) ao inventário do usuário.
+
+        Args:
+            user_id: ID do usuário
+            item_id: ID do item a ser adicionado
+            quantity: Quantidade a adicionar (deve ser positivo)
+
+        Returns:
+            bool: True se adicionou com sucesso, False caso contrário
+        """
+        try:
+            # Valida quantidade positiva
+            if quantity <= 0:
+                logger.warning(f'Tentativa de adicionar quantidade inválida ({quantity}) ao usuário {user_id}')
+                return False
+
+            # Verifica se o usuário existe
+            user = await self.get_by_id(user_id)
+
+            if not user:
+                logger.warning(f'Usuário {user_id} não encontrado ao tentar adicionar item')
+                return False
+
+            # Adiciona ao inventário
+            result = await self.collection.update_one(
+                {'_id': user_id},
+                {'$inc': {f'inventory.{item_id}': quantity}}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f'Usuário {user_id} recebeu {quantity}x item {item_id}')
+                return True
+
+            logger.warning(f'Falha ao adicionar item ao inventário do usuário {user_id}')
+            return False
+
+        except Exception as e:
+            logger.error(f'Erro ao adicionar item {item_id} ao inventário do usuário {user_id}: {e}', exc_info=True)
+            return False
 
 
