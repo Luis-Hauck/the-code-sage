@@ -8,6 +8,9 @@ from src.database.models.user import UserModel, UserStatus
 logger = logging.getLogger('__name__')
 
 class UserRepository:
+    """
+    Repositório de operações com a coleção de usuários.
+    """
     def __init__(self, db: Database):
         # Conexão com a coleção User
         self.collection = db.users
@@ -308,5 +311,27 @@ class UserRepository:
         except Exception as e:
             logger.error(f'Erro ao remover item {item_id} do inventário do usuário {user_id}: {e}', exc_info=True)
             return False
+
+    async def add_role(self, user_id: int, role_id: int) -> bool:
+        """Adiciona role
+        Args:
+            user_id: ID do usuário
+            role_id: ID do item a ser removido
+        Returns:
+            bool: True se adcionou com sucesso, False caso contrário
+        """
+        try:
+            result = await self.collection.update_one(
+                {'_id': user_id},
+                {'$addToSet': {'role_ids': role_id}}
+            )
+            if result.modified_count > 0:
+                logger.info(f'O cargo {role_id} foi adcionado ao usuário {user_id}')
+                return True
+        except Exception as e:
+            logger.error(f'Erro ao adicionar role: {e} ao usuário {user_id}', exc_info=True)
+            return False
+
+    
 
 
