@@ -1,8 +1,9 @@
 from pymongo.database import Database
 import logging
 from src.database.models.user import UserModel, UserStatus
+from pymongo.errors import DuplicateKeyError
 
-logger = logging.getLogger('__name__')
+logger = logging.getLogger(__name__)
 
 class UserRepository:
     """
@@ -31,9 +32,14 @@ class UserRepository:
                 logger.info('Usuário cadastrado')
                 return True
 
+        except DuplicateKeyError:
+            logger.warning(f"Tentativa de criar um usuário duplicado")
+            return False
+
         except Exception as e:
             logger.error(f'Erro inesperado ao criar o usuário: {e}', exc_info=True)
             return False
+
 
     async def update_status(self, user_id: int, status: UserStatus) -> bool:
         """
@@ -113,7 +119,7 @@ class UserRepository:
             logger.error(f'Erro ao buscar usuário {user_id}: {e}', exc_info=True)
             return None
 
-    async def equip_item(self, user_id: int, item_id: int) -> bool:
+    async def equip_item(self, user_id: int, item_id: str) -> bool:
         """
         Equipa um item no usuário.
         Args:
@@ -123,9 +129,8 @@ class UserRepository:
             bool: True se o banco de dados confirmou o recebimento do comando,
                   False em caso de erro de conexão.
         """
+
         try:
-            # Converte item_id para string para compatibilidade com o inventário
-            item_key = str(item_id)
 
             # Verifica se o usuário existe
             user = await self.get_by_id(user_id)
@@ -134,12 +139,12 @@ class UserRepository:
                 return False
 
             # Verifica se o item está no inventário
-            if item_key not in user.inventory:
+            if item_id not in user.inventory:
                 logger.warning(f'Item {item_id} não está no inventário do usuário {user_id}')
                 return False
 
             # Verifica se há quantidade suficiente do item
-            if user.inventory[item_key] <= 0:
+            if user.inventory[item_id] <= 0:
                 logger.warning(f'Usuário {user_id} não possui quantidade suficiente do item {item_id}')
                 return False
 
@@ -154,7 +159,7 @@ class UserRepository:
             result = await self.collection.update_one(
                 {
                     '_id': user_id,
-                    f'inventory.{item_key}': {'$gt': 0}  # Garante que o item ainda está no inventário
+                    f'inventory.{item_id}': {'$gt': 0}  # Garante que o item ainda está no inventário
                 },
                 {'$set': {'equipped_item_id': item_id}}
             )
@@ -183,24 +188,24 @@ class UserRepository:
         Args:
             user_id: ID do usuário
         Returns:
-            bool: True se o banco de dados confirmou o recebimento do comando,
-                  False em caso de erro de conexão.
+            bool: True se a operação foi bem-sucedida. False em caso de erro.
         """
 
         try:
             # Verifica se o usuário existe e tem item equipado
             user = await self.get_by_id(user_id)
 
+            # Salva o ID do item que será desequipado para o log
+            item_id = user.equipped_item_id
+
             if not user:
                 logger.warning(f'Usuário {user_id} não encontrado ao tentar desequipar item')
                 return False
 
             if user.equipped_item_id is None:
-                logger.info(f'Usuário {user_id} já não tem item equipado')
+                logger.info(f'Usuário {user_id} já não tem o item {item_id} equipado')
                 return True
 
-            # Salva o ID do item que será desequipado para o log
-            item_id = user.equipped_item_id
 
             # Remove o item equipado
             result = await self.collection.update_one(
@@ -219,7 +224,7 @@ class UserRepository:
             logger.error(f'Erro ao desequipar item de {user_id}: {e}', exc_info=True)
             return False
 
-    async def add_item_to_inventory(self, user_id: int, item_id: str, quantity: int = 1) -> bool:
+    async def add_item_to_inventory(self, user_id: int, item_id: str, quantity: int) -> bool:
         """
         Adiciona item(s) ao inventário do usuário.
 
@@ -229,21 +234,16 @@ class UserRepository:
             quantity: Quantidade a adicionar (deve ser positivo)
 
         Returns:
-            bool: True se adicionou com sucesso, False caso contrário
+            bool: True se a operação foi bem-sucedida ou se a quantidade era zero. False em caso de erro.
         """
+        if not quantity:
+            return True
+
+        # Valida quantidade positiva
+        if quantity < 0:
+            logger.warning(f'Tentativa de adicionar quantidade inválida ({quantity}) ao usuário {user_id}')
+            return False
         try:
-            # Valida quantidade positiva
-            if quantity <= 0:
-                logger.warning(f'Tentativa de adicionar quantidade inválida ({quantity}) ao usuário {user_id}')
-                return False
-
-            # Verifica se o usuário existe
-            user = await self.get_by_id(user_id)
-
-            if not user:
-                logger.warning(f'Usuário {user_id} não encontrado ao tentar adicionar item')
-                return False
-
             # Adiciona ao inventário
             result = await self.collection.update_one(
                 {'_id': user_id},
@@ -273,9 +273,12 @@ class UserRepository:
         Returns:
             bool: True se removeu com sucesso, False caso contrário
         """
+        if not quantity:
+            logger.warning(f'Tentativa de remover quantidade inválida ({quantity}) do usuário {user_id}')
+            return False
         try:
             # Valida quantidade positiva
-            if quantity <= 0:
+            if quantity < 0:
                 logger.warning(f'Tentativa de remover quantidade inválida ({quantity}) do usuário {user_id}')
                 return False
 

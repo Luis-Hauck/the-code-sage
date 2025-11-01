@@ -63,7 +63,7 @@ class TheCodeSageBot(commands.Bot):
         logger.info('Encerrando o bot...')
 
         if self.db:
-            self.db_client.close()
+            self.db.close()
             logger.info('Conexão com MongoDB encerrada.')
 
         await super().close()

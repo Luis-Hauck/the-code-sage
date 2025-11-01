@@ -1,6 +1,15 @@
 from pydantic import BaseModel, Field
 from typing import Literal, Union
 
+
+class AddXpEffect(BaseModel):
+    type: Literal["add_xp"]
+    amount: int
+
+class AddCoinsEffect(BaseModel):
+    type: Literal["add_coins"]
+    amount: int
+
 class CoinBoostPassive(BaseModel):
     type: Literal['coin_boost']
     multiplier: float
@@ -17,4 +26,4 @@ class GiveRoleEffect(BaseModel):
 
 # Com Union AnyPassiveEffect e Effect pode receber mais tipos de objeto
 AnyPassiveEffect = Union[CoinBoostPassive, XpBoostPassive]
-AnyEffect = Union[GiveRoleEffect]
+AnyEffect = Union[GiveRoleEffect, AddXpEffect, AddCoinsEffect]
