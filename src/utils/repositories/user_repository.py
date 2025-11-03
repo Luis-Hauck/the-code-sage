@@ -28,9 +28,9 @@ class UserRepository:
             user_data = user_model.model_dump(by_alias=True)
             result = await self.collection.insert_one(user_data)
 
-            if result.inserted_id:
-                logger.info('Usuário cadastrado')
-                return True
+
+            logger.info('Usuário cadastrado')
+            return True
 
         except DuplicateKeyError:
             logger.warning(f"Tentativa de criar um usuário duplicado")
