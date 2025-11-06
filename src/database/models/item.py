@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from enum import Enum
 from src.database.models.effects import AnyEffect, AnyPassiveEffect
+
+
 class ItemType(str, Enum):
     """
     Modelo com os tipos de itens disponiveis
@@ -11,7 +13,7 @@ class ItemType(str, Enum):
     ROLE = "cargo"
 
 
-class ItemsModel(BaseModel):
+class ItemModel(BaseModel):
     """
     Modelo de dados para os itens.
 
