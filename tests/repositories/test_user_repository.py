@@ -146,27 +146,41 @@ async def test_add_item_to_inventory(mock_db, user_id, item_id, quantity):
             {'$inc': {f'inventory.{item_id}': quantity}}
         )
 
-async def test_equip_item_success_when_user_has_item(mock_db, sample_user):
+async def test_equip_item_success(mock_db):
     """
-    Testa se o item é equipado quando o usuário o possui no inventário.
+    Testa o sucesso: O usuário existe, tem o item e o equipa.
     """
-
-    item_id_to_equip = 101  # Este item existe no inventário do sample_user
-
-    #get_by_id encontrará o sample_user
-    mock_db.users.find_one.return_value = sample_user.model_dump(by_alias=True)
-
-    # update_one simulará sucesso
-    mock_db.users.update_one.return_value = MagicMock(acknowledged=True)  # Usando acknowledged
-
+    # Simulamos que o MongoDB encontrou 1 documento e modificou 1.
+    mock_db.users.update_one.return_value = MagicMock(matched_count=1, modified_count=1)
     user_repo = UserRepository(db=mock_db)
 
-    result = await user_repo.equip_item(user_id=sample_user.user_id, item_id=str(item_id_to_equip))
+    # Passamos os IDs
+    result = await user_repo.equip_item(user_id=12345, item_id='101')
 
     assert result is True
-    # Garante que a chamada final de escrita foi feita
-    mock_db.users.update_one.assert_awaited()
+    mock_db.users.update_one.assert_awaited_with(
+        {
+            '_id': 12345,
+            'inventory.101': {'$gt': 0}
+        },
+        {'$set': {'equipped_item_id': '101'}}
+    )
 
+
+async def test_equip_item_already_equipped(mock_db):
+    """
+    Testa o caso onde o item já estava equipado.
+    Cenário: matched_count=1 (encontrou e tem o item), modified_count=0 (nada mudou).
+    """
+    # Encontrou o documento (matched=1), mas o valor já era esse (modified=0)
+    mock_db.users.update_one.return_value = MagicMock(matched_count=1, modified_count=0)
+    user_repo = UserRepository(db=mock_db)
+
+
+    result = await user_repo.equip_item(user_id=12345, item_id='101')
+
+
+    assert result is True
 
 async def test_remove_all_item_from_inventory(mock_db, sample_user):
     """Testa a função remove_item_from_inventory quando removemos todos os itens do inventário"""
@@ -211,22 +225,18 @@ async def test_remove_item_from_inventory(mock_db, sample_user):
         {'$inc': {f'inventory.{101}': -quantity_to_remove}} # <-- Expect -1 here
     )
 
-async def test_equip_item_fails_when_user_does_not_have_item(mock_db, sample_user):
+async def test_equip_item_failure_not_owned_or_no_user(mock_db):
     """
-    Testa se a função retorna False se o item não está no inventário.
+    Testa a falha: Usuário não existe OU não tem o item no inventário.
+    Cenário: matched_count=0.
     """
-    item_id_to_equip = 999  # Um item que NÃO está no inventário do sample_user
-
-    # get_by_id encontrará o sample_user (que não tem o item 999)
-    mock_db.users.find_one.return_value = sample_user.model_dump(by_alias=True)
-
+    # O filtro falhou, então nenhum documento foi encontrado.
+    mock_db.users.update_one.return_value = MagicMock(matched_count=0)
     user_repo = UserRepository(db=mock_db)
 
-    result = await user_repo.equip_item(user_id=sample_user.user_id, item_id=str(item_id_to_equip))
+    result = await user_repo.equip_item(user_id=12345, item_id='999') # Item que não tem
 
     assert result is False
-    # A verificação mais importante: garante que a função parou ANTES de tentar escrever no DB.
-    mock_db.users.update_one.assert_not_awaited()
 
 async def test_unequip_item_when_equipped(mock_db, sample_user):
     """Testa remoção de algum item equipado"""

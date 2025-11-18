@@ -64,7 +64,7 @@ class UserRepository:
             logger.error(f'Falha ao atualizar os status do user {user_id}: {e}')
             return False
 
-    async def add_xp_coins(self, user_id:int, xp:float, coins:float):
+    async def add_xp_coins(self, user_id:int, xp:float, coins:float) -> bool:
         """
         Adicona XP e moedas ao usuário pelo ID.
 
@@ -92,6 +92,10 @@ class UserRepository:
             if result.modified_count > 0:
                 logger.info(f'XP e moedas incrementadas para user {user_id}')
                 return True
+
+            logger.warning(f'Falha ao incrementar: Usuário {user_id} não encontrado.')
+            return False
+
 
         except Exception as e:
             logger.error(f'Falha ao incremenatar xp e moedas ao user {user_id}: {e}')
@@ -126,53 +130,31 @@ class UserRepository:
             user_id: ID do usuário
             item_id: ID do item a ser equipado
         Returns:
-            bool: True se o banco de dados confirmou o recebimento do comando,
-                  False em caso de erro de conexão.
+            bool: True se ocorreu sucesso na operação,
+                  False caso contrário.
         """
 
         try:
-
-            # Verifica se o usuário existe
-            user = await self.get_by_id(user_id)
-            if not user:
-                logger.warning(f'Usuário {user_id} não encontrado ao tentar equipar item')
-                return False
-
-            # Verifica se o item está no inventário
-            if item_id not in user.inventory:
-                logger.warning(f'Item {item_id} não está no inventário do usuário {user_id}')
-                return False
-
-            # Verifica se há quantidade suficiente do item
-            if user.inventory[item_id] <= 0:
-                logger.warning(f'Usuário {user_id} não possui quantidade suficiente do item {item_id}')
-                return False
-
-            # Verifica se o item já está equipado (opcional, mas recomendado)
-            if user.equipped_item_id == item_id:
-                logger.info(f'Item {item_id} já está equipado no usuário {user_id}')
-                return True
-
-            # Salva o item anterior para log
-            previous_item = user.equipped_item_id
-
             result = await self.collection.update_one(
                 {
                     '_id': user_id,
-                    f'inventory.{item_id}': {'$gt': 0}  # Garante que o item ainda está no inventário
+                    f'inventory.{item_id}': {'$gt': 0}  #
                 },
                 {'$set': {'equipped_item_id': item_id}}
             )
 
-            if result.acknowledged:
-                logger.info(
-                    f'Usuário {user_id} equipou item {item_id} '
-                    f'(anterior: {previous_item or "nenhum"})'
-                )
-                return True
+            if result.matched_count == 0:
+                logger.info(f'Falha: Usuário {user_id} não possui o item {item_id} ou não existe.')
+                return False
 
-            logger.warning(f'Falha ao equipar item {item_id} para usuário {user_id}')
-            return False
+            # Se encontrou (matched > 0), é sucesso, mesmo que já estivesse equipado.
+            if result.modified_count > 0:
+                logger.info(
+                    f'Usuário {user_id} equipou item {item_id}' )
+            else:
+                logger.info(f"Usuário {user_id} já estava com o item {item_id} equipado.")
+
+            return True
 
         except Exception as e:
             logger.error(
