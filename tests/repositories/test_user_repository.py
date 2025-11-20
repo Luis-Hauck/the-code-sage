@@ -189,7 +189,7 @@ async def test_remove_all_item_from_inventory(mock_db, sample_user):
 
     mock_db.users.find_one.return_value = sample_user.model_dump(by_alias=True)
 
-    mock_db.users.update_one.return_value = MagicMock(modified_count=True)
+    mock_db.users.update_one.return_value = MagicMock(modified_count=1)
 
     user_repo = UserRepository(db=mock_db)
 
@@ -238,43 +238,34 @@ async def test_equip_item_failure_not_owned_or_no_user(mock_db):
 
     assert result is False
 
-async def test_unequip_item_when_equipped(mock_db, sample_user):
-    """Testa remoção de algum item equipado"""
 
-    # simula um usuário com item equipado
-    sample_user.equipped_item_id = 101
-    mock_db.users.find_one.return_value = sample_user.model_dump(by_alias=True)
+async def test_unequip_item_success(mock_db):
+    """Testa o desequipamento atômico."""
 
-    mock_db.users.update_one.return_value = MagicMock(modified_count=True)
-
+    # Simulamos que o usuário foi encontrado e modificado
+    mock_db.users.update_one.return_value = MagicMock(matched_count=1, modified_count=1)
     user_repo = UserRepository(db=mock_db)
 
-    result = await user_repo.unequip_item(user_id=sample_user.user_id)
+    result = await user_repo.unequip_item(user_id=12345)
 
     assert result is True
 
-    # Verifica se a leitura aconteceu
-    mock_db.users.find_one.assert_awaited_with({'_id': sample_user.user_id})
-
-    # verifica se a escrita aconteceu
+    # Verifica a query atômica com $unset
     mock_db.users.update_one.assert_awaited_with(
-        {'_id': sample_user.user_id},
-        {'$set': {'equipped_item_id': None}}
+        {'_id': 12345},
+        {'$unset': {'equipped_item_id': ""}}
     )
 
-async def test_unequip_item_when_not_equipped(mock_db, sample_user):
-    """Testa se unequip_item retorna True (sem chamar update) se nada está equipado."""
+async def test_unequip_item_idempotent(mock_db):
+    """Testa que retorna True mesmo se já estava desequipado."""
 
-    # Simula um usuário sem item equipado
-    sample_user.equipped_item_id = None
-    mock_db.users.find_one.return_value = sample_user.model_dump(by_alias=True)
-
+    # Encontrado (matched=1), mas nada mudou (modified=0)
+    mock_db.users.update_one.return_value = MagicMock(matched_count=1, modified_count=0)
     user_repo = UserRepository(db=mock_db)
 
-    result = await user_repo.unequip_item(user_id=sample_user.user_id)
+    result = await user_repo.unequip_item(user_id=12345)
 
     assert result is True
-    mock_db.users.update_one.assert_not_awaited()
 
 async def test_add_role(mock_db, sample_user):
     """Testa a função add_role."""

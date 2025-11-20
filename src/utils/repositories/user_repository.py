@@ -247,28 +247,18 @@ class UserRepository:
         Returns:
             bool: True se removeu com sucesso, False caso contrário
         """
-        if not quantity:
+        if  quantity <= 0:
             logger.warning(f'Tentativa de remover quantidade inválida ({quantity}) do usuário {user_id}')
             return False
         try:
-            # Valida quantidade positiva
-            if quantity < 0:
-                logger.warning(f'Tentativa de remover quantidade inválida ({quantity}) do usuário {user_id}')
-                return False
-
-            # Verifica se o usuário existe
+            # Pegamos os dados do usuário
             user = await self.get_by_id(user_id)
 
             if not user:
                 logger.warning(f'Usuário {user_id} não encontrado ao tentar remover item')
                 return False
 
-            # Verifica se o item está no inventário
             current_quantity = user.inventory.get(item_id, 0)
-
-            if current_quantity <= 0:
-                logger.warning(f'Usuário {user_id} não possui o item {item_id} no inventário')
-                return False
 
             # Verifica se tem quantidade suficiente
             if current_quantity < quantity:
@@ -278,23 +268,18 @@ class UserRepository:
                 )
                 return False
 
-            # Se vai remover tudo, remove a chave do dicionário
             if current_quantity == quantity:
-                result = await self.collection.update_one(
-                    {'_id': user_id},
-                    {'$unset': {f'inventory.{item_id}': ''}}
-                )
-                action = 'removido completamente'
+                # Se vai remover tudo, remove a chave do dicionário
+                operation = {'$unset': {f'inventory.{item_id}': ''}}
             else:
                 # Senão, apenas decrementa
-                result = await self.collection.update_one(
-                    {'_id': user_id},
-                    {'$inc': {f'inventory.{item_id}': -quantity}}
-                )
-                action = f'decrementado de {current_quantity} para {current_quantity - quantity}'
+                operation = {'$inc': {f'inventory.{item_id}': -quantity}}
+
+            # Executamos a operação escolhida
+            result = await self.collection.update_one({'_id': user_id}, operation)
 
             if result.modified_count > 0:
-                logger.info(f'Usuário {user_id}: {quantity}x item {item_id} {action}')
+                logger.info(f'Usuário {user_id}:removeu {quantity}x o item {item_id} ')
                 return True
 
             logger.warning(f'Falha ao remover item do inventário do usuário {user_id}')
