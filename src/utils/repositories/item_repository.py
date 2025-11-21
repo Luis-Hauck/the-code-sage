@@ -27,7 +27,7 @@ class ItemRepository:
             item_data = item_model.model_dump(by_alias=True)
             await self.collection.insert_one(item_data)
 
-            logging.info(f'Item: {item_data.name} | ID:{item_data.id} cadastrado com sucesso')
+            logging.info(f'Item: {item_model.name} | ID:{item_model.item_id} cadastrado com sucesso')
             return True
 
         except DuplicateKeyError:
@@ -73,7 +73,7 @@ class ItemRepository:
             )
 
             if result.matched_count >  0:
-                logger.info(f'Preço do item {item_id} alaterado para {new_price}')
+                logger.info(f'Preço do item {item_id} alterado para {new_price}')
                 return True
 
             logger.warning(f'Tentativa de atualizar o preço de item inexistente: {item_id}')
@@ -81,8 +81,25 @@ class ItemRepository:
 
 
         except Exception as e:
-            logger.warning(f'Falha ao atualizar o preço do item: {item_id}')
+            logger.warning(f'Falha ao atualizar o preço do item: {item_id}: {e}')
             return False
 
-    
+    async def delete(self, item_id: int) -> bool:
+        """
+        Deleta um item
+        :param item_id: ID do item
+        :return: True se a operação foi realizada e False caso contrário.
+        """
+        try:
+            result = await self.collection.delete_one({'_id': item_id})
 
+            if result.deleted_count >0:
+                logger.info(f'item com id{item_id} excluído com sucesso.')
+                return True
+
+            logger.warning(f'Item {item_id} não encontrado para deletar')
+            return False
+
+        except Exception as e:
+            logger.error(f'Erro ao deletar item {item_id}: {e}', exc_info=True)
+            return False
