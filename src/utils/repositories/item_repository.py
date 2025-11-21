@@ -25,9 +25,9 @@ class ItemRepository:
 
         try:
             item_data = item_model.model_dump(by_alias=True)
-            result  = await self.collection.insert_one(item_data)
+            await self.collection.insert_one(item_data)
 
-            logging.info('Item cadastrado com sucesso')
+            logging.info(f'Item: {item_data.name} | ID:{item_data.id} cadastrado com sucesso')
             return True
 
         except DuplicateKeyError:
@@ -57,3 +57,32 @@ class ItemRepository:
         except Exception as e:
             logger.error(f'Erro ao buscar o ID {item_id}: {e}', exc_info=True)
             return None
+
+    async def update_price(self, item_id: int, new_price: int) -> bool:
+        """
+        Atualiza o preço d eum item
+        :param item_id: ID do item.
+        :param new_price: Novo preço do item.
+        :return: True se a operação foi realizada e False caso contrário.
+        """
+
+        try:
+            result = await self.collection.update_one(
+                {'_id': item_id},
+                {'$set':{'price':new_price}}
+            )
+
+            if result.matched_count >  0:
+                logger.info(f'Preço do item {item_id} alaterado para {new_price}')
+                return True
+
+            logger.warning(f'Tentativa de atualizar o preço de item inexistente: {item_id}')
+            return False
+
+
+        except Exception as e:
+            logger.warning(f'Falha ao atualizar o preço do item: {item_id}')
+            return False
+
+    
+
