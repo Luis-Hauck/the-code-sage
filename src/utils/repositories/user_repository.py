@@ -58,7 +58,13 @@ class UserRepository:
                 {'_id': user_id},
                 {'$set': {'status': status}}
             )
-            return result.acknowledged
+            if result.matched_count >0:
+                logger.info(f'Status do user {user_id} atualizado para {status}')
+                return True
+
+            # Se chegou aqui, o usuário não existe.
+            logger.warning(f'Tentativa de atualizar status de usuário inexistente: {user_id}')
+            return False
 
         except Exception as e:
             logger.error(f'Falha ao atualizar os status do user {user_id}: {e}')
