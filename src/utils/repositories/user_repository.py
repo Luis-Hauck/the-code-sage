@@ -26,10 +26,10 @@ class UserRepository:
 
         try:
             user_data = user_model.model_dump(by_alias=True)
-            result = await self.collection.insert_one(user_data)
+            await self.collection.insert_one(user_data)
 
 
-            logger.info('Usuário cadastrado')
+            logger.info(f'Usuário cadastrado: {user_model.username} | ID: {user_model.user_id}')
             return True
 
         except DuplicateKeyError:
