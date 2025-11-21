@@ -307,7 +307,13 @@ class UserRepository:
             # Se a operação foi realizada
             if result.modified_count > 0:
                 logger.info(f'O cargo {role_id} foi adcionado ao usuário {user_id}')
-                return True
+            else:
+                # Se não modificou o cargo existia
+                logger.info(f'Usuário {user_id} já possuia o cargo {role_id} ')
+
+            # Retorna True se o comando foi processado com sucesso pelo banco
+            return result.acknowledged
+
         except Exception as e:
             logger.error(f'Erro ao adicionar role: {e} ao usuário {user_id}', exc_info=True)
             return False
@@ -333,10 +339,13 @@ class UserRepository:
 
             if result.modified_count > 0:
                 logger.info(f'Role {role_id} removida com sucesso do usuário {user_id}')
-                return True
+
+            else:
+                logger.info(f'Usuário {user_id} não possuia o cargo {role_id} para ser removido!')
+
+            return result.acknowledged
 
         except Exception as e:
             logger.error(f'Erro aoremover role: {e} ao usuário {user_id}', exc_info=True)
             return False
-
 
