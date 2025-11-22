@@ -13,7 +13,7 @@ class EvaluatorModel(BaseModel):
     username: str
     rank: str
 
-class MissionsModel(BaseModel):
+class MissionModel(BaseModel):
     """
     Modelo de dados para missões.
     mission_id: id da thread criada
