@@ -1,7 +1,13 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List
+from enum import Enum
 
+class MissionStatus(str, Enum):
+    OPEN = 'aberta' #missão criada recebendo resposta
+    COMPLETED = 'concluida' # missão avaliada e aguardando ser fechada
+    UNDER_REVIEW = 'sob_revisao' # missão em análise
+    CLOSED = 'fechada'  # missão fechada e não pode mais er aberta
 
 
 
