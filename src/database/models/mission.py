@@ -1,9 +1,12 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from enum import Enum
 
 class MissionStatus(str, Enum):
+    """
+    Representa os status de uma missão.
+    """
     OPEN = 'aberta' #missão criada recebendo resposta
     COMPLETED = 'concluida' # missão avaliada e aguardando ser fechada
     UNDER_REVIEW = 'sob_revisao' # missão em análise
@@ -33,8 +36,9 @@ class MissionModel(BaseModel):
     title: str
     creator_id: int
     created_at: datetime
-    status: str
+    status: MissionStatus = Field(default=MissionStatus.OPEN)
     evaluators: List[EvaluatorModel] = []
+    completed_at: Optional[datetime] = None
 
     class Config:
         populate_by_name = True
