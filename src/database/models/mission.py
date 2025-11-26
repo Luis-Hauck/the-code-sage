@@ -85,9 +85,18 @@ class EvaluatorModel(BaseModel):
     """
     Representa um único avaliador dentro de uma missão.
     """
+    # dados do usuário
     user_id: int
     username: str
-    rank: str
+    user_level_at_time: int
+
+    # dados da avaliação
+    rank: Optional[EvaluationRank] = None
+    score: Optional[int] = None
+
+    # recompensas recebidas
+    xp_earned: int = 0
+    coins_earnd: int = 0
 
 class MissionModel(BaseModel):
     """
