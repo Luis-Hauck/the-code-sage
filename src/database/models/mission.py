@@ -96,7 +96,7 @@ class EvaluatorModel(BaseModel):
 
     # recompensas recebidas
     xp_earned: int = 0
-    coins_earnd: int = 0
+    coins_earned: int = 0
 
 class MissionModel(BaseModel):
     """
