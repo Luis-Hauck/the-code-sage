@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from pymongo.errors import DuplicateKeyError
 
 from src.database.models.item import ItemModel, ItemType
-from src.database.models.effects import CoinBoostPassive, GiveRoleEffect, XpBoostPassive
+from src.database.models.effects import CoinBoostPassive, GiveRoleEffect, XpBoostPassive, AnyEffect
 from src.utils.repositories.item_repository import ItemRepository
 
 pytestmark = pytest.mark.asyncio
@@ -41,7 +41,7 @@ def sample_equip_item() -> ItemModel:
         description="Aumenta ganho de moedas.",
         price=500,
         item_type=ItemType.EQUIPPABLE,
-        effect= GiveRoleEffect(type='role_effect', role_id=101),
+        effect= AnyEffect(type='role_effect', role_id=101),
         passive_effects=[
             CoinBoostPassive(type='coin_boost', multiplier=1.05)
         ]
