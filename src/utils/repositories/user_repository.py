@@ -345,11 +345,10 @@ class UserRepository:
 
             if result.modified_count > 0:
                 logger.info(f'Role {role_id} removida com sucesso do usuário {user_id}')
+                return True
 
-            else:
-                logger.info(f'Usuário {user_id} não possuia o cargo {role_id} para ser removido!')
-
-            return result.acknowledged
+            logger.info(f'Usuário {user_id} não possuia o cargo {role_id} para ser removido!')
+            return False
 
         except Exception as e:
             logger.error(f'Erro aoremover role: {e} ao usuário {user_id}', exc_info=True)
