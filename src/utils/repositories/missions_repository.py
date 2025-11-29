@@ -1,6 +1,6 @@
 from pymongo.database import Database
 import logging
-from src.database.models.mission import MissionModel, MissionStatus, EvaluationRank
+from src.database.models.mission import MissionModel, MissionStatus, EvaluationRank, EvaluatorModel
 from pymongo.errors import DuplicateKeyError
 from datetime import datetime
 from typing import Optional, Dict, Any
@@ -84,6 +84,43 @@ class MissionRepository:
 
         except Exception as e:
             logger.info(f'Erro ao atualizar a missão com ID:{mission_id}: {e}')
+            return False
+
+    async def add_participant(self, mission_id:int, evaluator_model: EvaluatorModel) -> bool:
+        """
+        Adciona um participante a missão caso ele ainda não esteja lá.
+        :param mission_id: ID da missão que o usuário vai participar.
+        :param evaluator_model: Usuário que vai ser avaldiado, sendo um objeto do tipo EvaluatorModel.
+        :return: True caso o participante seja adicioando/já esatva adcioando a missão, e False caso contrário
+        """
+        try:
+            evaluator_data = evaluator_model.model_dump()
+            result = await self.collection.update_one(
+                {
+                    '_id': mission_id,
+                    'evaluators.user_id': {'$ne': evaluator_model.user_id}
+                },
+                {
+                    '$push':{'evaluators': evaluator_data}
+                }
+
+            )
+
+            if result.modified_count > 0:
+                logger.info(f'O participante {evaluator_model.user_id} foi adicionado a missão {mission_id}')
+                return True
+
+            mission_exists = await self.collection.count_documents({'_id':mission_id}, limit=1)
+
+            if mission_exists:
+                logger.info(f'O participante {evaluator_model.user_id} já estava participando da missão.')
+                return True
+
+            logging.warning(f'Tentativa de adicionar um participante a uma missão inexistente')
+            return False
+
+        except Exception as e:
+            logger.error(f'Falha ao adcionar o participante {evaluator_model.user_id} a missão {mission_id}: {e}')
             return False
 
 
