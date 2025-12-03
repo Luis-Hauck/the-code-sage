@@ -38,7 +38,6 @@ async def test_create_user_success(mock_db, sample_user):
     user_repo = UserRepository(db=mock_db)
     result = await user_repo.create(user_model=sample_user)
 
-    # 1. ASSERT FORTE: Verifica não apenas o retorno, mas a chamada ao mock.
     assert result is True
     expected_data = sample_user.model_dump(by_alias=True)
     mock_db.users.insert_one.assert_awaited_with(expected_data)
@@ -76,7 +75,7 @@ async def test_get_by_id_not_found(mock_db):
 async def test_update_status(mock_db, status_to_set):
     """Testa se update_status chama update_one com o filtro e $set corretos."""
     # Assumindo que a função agora retorna `result.acknowledged`
-    mock_db.users.update_one.return_value = MagicMock(acknowledged=True)
+    mock_db.users.update_one.return_value = MagicMock(matched_count=1)
     user_repo = UserRepository(db=mock_db)
     result = await user_repo.update_status(user_id=12345, status=status_to_set)
 
@@ -270,7 +269,7 @@ async def test_unequip_item_idempotent(mock_db):
 async def test_add_role(mock_db, sample_user):
     """Testa a função add_role."""
 
-    mock_db.users.update_one.return_value = MagicMock(modified_count=True)
+    mock_db.users.update_one.return_value = MagicMock(modified_count=1,acknowledged=True)
 
     user_repo = UserRepository(db=mock_db)
 
@@ -285,7 +284,7 @@ async def test_add_role(mock_db, sample_user):
 async def test_remove_role(mock_db, sample_user):
     """Testa a remoção de um role."""
 
-    mock_db.users.update_one.return_value = MagicMock(modified_count=True)
+    mock_db.users.update_one.return_value = MagicMock(modified_count=True,acknowledged=True)
 
     user_repo = UserRepository(db=mock_db)
 

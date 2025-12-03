@@ -115,12 +115,11 @@ async def test_register_evaluation_success(mock_db):
     assert result is True
 
     mock_db.missions.update_one.assert_awaited_with(
-        # FILTRO: Missão X e Usuário Y na lista
         {
             "_id": mission_id,
             "evaluators.user_id": user_id
         },
-        # UPDATE: Atualizar campos do item encontrado ($)
+
         {
             "$set": {
                 'evaluators.$.user_id': 555,
@@ -153,23 +152,26 @@ async def test_register_evaluation_user_not_in_list(mock_db):
     assert result is False
 
 
-async def test_add_evaluator(mock_db):
-    """Testa adicionar um usuário na lista com $addToSet."""
-    mock_db.missions.update_one.return_value = MagicMock(acknowledged=True)
+async def test_add_participant(mock_db):
+    """Testa adicionar um usuário na lista de participantes"""
+    mock_db.missions.update_one.return_value = MagicMock(modified_count=1)
     repo = MissionRepository(db=mock_db)
 
-    new_evaluator_id = 777
+    new_participant = EvaluatorModel(user_id=999,
+                                     username= 'Luis',
+                                        user_level_at_time=1
+                                     )
 
-    result = await repo.add_evaluator(mission_id=101, evaluator_id=new_evaluator_id)
+    result = await repo.add_participant(mission_id=101, evaluator_model=new_participant)
 
     assert result is True
 
-    # Verifica o operador $addToSet que evita duplicatas
-    # Nota: Aqui precisamos ver como seu add_evaluator constroi o objeto EvaluatorModel
-    # Se ele recebe só o ID, o teste é simples. Se recebe o objeto, ajuste o assert.
-
-    # Assumindo que add_evaluator recebe IDs e cria o objeto ou insere o ID:
-    # (Ajuste conforme a sua implementação real do método add_evaluator)
     args, _ = mock_db.missions.update_one.await_args
-    assert args[0] == {'_id': 101}
-    assert '$addToSet' in args[1]
+    filtro_usado = args[0]
+    update_usado = args[1]
+
+    assert filtro_usado['_id'] == 101
+    assert filtro_usado['evaluators.user_id'] == {'$ne':999}
+    assert update_usado['$push']['evaluators']['user_id'] == 999
+
+
