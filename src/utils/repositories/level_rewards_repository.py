@@ -45,7 +45,7 @@ class LevelRewardsRepository:
 
 
             )
-            return [id['role_id'] async for doc in cursor]
+            return [doc['role_id'] async for doc in cursor]
 
         except Exception as e:
             logger.error(f"Erro ao listar cargos de recompensa: {e}", exc_info=True)
