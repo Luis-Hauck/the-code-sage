@@ -64,7 +64,7 @@ class LevelRewardsRepository:
         try:
             data = reward_model.model_dump(by_alias=True, exclude_none=True)
             await self.collection.insert_one(data)
-            logger.info(f'Sucesso ao criar recompensa {reward_model['role_name']}.')
+            logger.info(f'Sucesso ao criar recompensa {reward_model.role_name}.')
             return True
         except DuplicateKeyError:
             logger.error(f'Erro ao criar a recompensa, pois ela já existe')
