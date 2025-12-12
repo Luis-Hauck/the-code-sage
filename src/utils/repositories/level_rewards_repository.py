@@ -22,13 +22,16 @@ class LevelRewardsRepository:
         :return:Retorna o Modelo se encontrar, ou None.
         """
         try:
-            result =  self.collection.find_one(
+            result =  await self.collection.find_one(
                 {'level_required': {'$lte': current_level}},
                 sort=[('level_required', -1)]
             )
 
             if result:
+                logger.info(f'Nível atual: {current_level}, Maior recompensa {result['role_name']}')
                 return LevelRewardsModel(**result)
+
+            logger.warning(f'Não foi possível identificar o modelo para o nível {current_level}.')
             return None
 
         except Exception as e:
@@ -39,27 +42,32 @@ class LevelRewardsRepository:
         Retorna uma lista com APENAS os IDs de todos os cargos de recompensa.
         """
         try:
-            cursor = self.collection.find_one(
+            cursor = await self.collection.find(
                 {},
                 {'role_id':1, 'id': 0}
 
 
             )
-            return [doc['role_id'] async for doc in cursor]
+            docs = await cursor.to_list(length=None)
+
+            # Extraímos os IDs da lista de dicionários
+            return [doc['role_id'] for doc in docs]
 
         except Exception as e:
             logger.error(f"Erro ao listar cargos de recompensa: {e}", exc_info=True)
             return []
 
-    async def create_reward(self, model: LevelRewardsModel) -> bool:
+    async def create(self, reward_model: LevelRewardsModel) -> bool:
         """
         Cria uma nova regra de recompensa (Para Admin/Seed).
         """
         try:
-            data = model.model_dump(by_alias=True, exclude_none=True)
+            data = reward_model.model_dump(by_alias=True, exclude_none=True)
             await self.collection.insert_one(data)
+            logger.info(f'Sucesso ao criar recompensa {reward_model['role_name']}.')
             return True
         except DuplicateKeyError:
+            logger.error(f'Erro ao criar a recompensa, pois ela já existe')
             return False
         except Exception as e:
             logger.error(f"Erro ao criar recompensa: {e}", exc_info=True)
