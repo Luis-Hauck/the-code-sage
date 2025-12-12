@@ -1,9 +1,7 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from pymongo.errors import DuplicateKeyError
 
 from src.database.models.level_rewards import LevelRewardsModel
-from src.utils.repositories.level_rewards_repository import LevelRewardsRepository
+from repositories.level_rewards_repository import LevelRewardsRepository
 
 
 pytestmark = pytest.mark.asyncio

@@ -4,7 +4,7 @@ from datetime import datetime
 from pymongo.errors import DuplicateKeyError
 
 from src.database.models.user import UserModel, UserStatus
-from src.utils.repositories.user_repository import UserRepository
+from repositories.user_repository import UserRepository
 
 pytestmark = pytest.mark.asyncio
 

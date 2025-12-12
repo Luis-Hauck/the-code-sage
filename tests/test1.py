@@ -1,14 +1,8 @@
 import discord
 import os
 from dotenv import load_dotenv
-from discord.ext import commands
 from bot.client import TheCodeSageBot
 load_dotenv()
-from src.database.connection import connect_to_database
-from src.utils.repositories.user_repository import UserRepository
-import datetime
-
-
 
 bot = TheCodeSageBot()
 
