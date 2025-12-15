@@ -129,7 +129,7 @@ class UserRepository:
             logger.error(f'Erro ao buscar usuário {user_id}: {e}', exc_info=True)
             return None
 
-    async def equip_item(self, user_id: int, item_id: str) -> bool:
+    async def equip_item(self, user_id: int, item_id: int) -> bool:
         """
         Equipa um item no usuário.
         Args:
@@ -204,7 +204,7 @@ class UserRepository:
             logger.error(f'Erro ao desequipar item de {user_id}: {e}', exc_info=True)
             return False
 
-    async def add_item_to_inventory(self, user_id: int, item_id: str, quantity: int) -> bool:
+    async def add_item_to_inventory(self, user_id: int, item_id: int, quantity: int) -> bool:
         """
         Adiciona item(s) ao inventário do usuário.
 
@@ -241,7 +241,7 @@ class UserRepository:
             logger.error(f'Erro ao adicionar item {item_id} ao inventário do usuário {user_id}: {e}', exc_info=True)
             return False
 
-    async def remove_item_from_inventory(self, user_id: int, item_id: str, quantity: int = 1) -> bool:
+    async def remove_item_from_inventory(self, user_id: int, item_id: int, quantity: int = 1) -> bool:
         """
         Remove item(s) do inventário do usuário.
 
