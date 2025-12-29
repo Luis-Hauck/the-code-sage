@@ -97,6 +97,7 @@ class EvaluatorModel(BaseModel):
     # recompensas recebidas
     xp_earned: int = 0
     coins_earned: int = 0
+    evaluate_at: Optional[datetime] = None
 
 class MissionModel(BaseModel):
     """
