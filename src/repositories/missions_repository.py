@@ -124,7 +124,7 @@ class MissionRepository:
             return False
 
 
-    async def register_evaluation(self,
+    async def update_evaluator(self,
                                   user_id:int,
                                   mission_id:int,
                                   score:int,
@@ -134,7 +134,7 @@ class MissionRepository:
                                   coins:int
                                   ) -> bool:
         """
-        Registra uma avaliação com base no ID da missão
+        ATUALIZA os dados de alguém que já foi avaliado
         :param user_id: Usuário a receber a avaliação.
         :param mission_id: Missão que o usuário foi avaliado;
         :param level_at_time: level do usuário ao receber a avaliação;
