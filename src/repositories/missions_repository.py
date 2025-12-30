@@ -125,50 +125,42 @@ class MissionRepository:
 
 
     async def update_evaluator(self,
-                                  user_id:int,
                                   mission_id:int,
-                                  score:int,
-                                  rank:EvaluationRank,
-                                  level_at_time:int,
-                                  xp:int,
-                                  coins:int
+                               evaluator_model: EvaluatorModel,
+
+
                                   ) -> bool:
         """
         ATUALIZA os dados de alguém que já foi avaliado
-        :param user_id: Usuário a receber a avaliação.
         :param mission_id: Missão que o usuário foi avaliado;
-        :param level_at_time: level do usuário ao receber a avaliação;
-        :param rank: Rank de S a E da missão.
-        :param score: Nota de 0-5 da missão
-        :param coins: Moedas ganhas.
-        :param xp: XP ganho.
+        :param evaluator_model: Usuário que vai ser atualizado na missão, sendo um objeto do tipo EvaluatorModel.
         :return: True caso tenha conseguido registrar, e False caso o contrário.
         """
         try:
+
             result = await self.collection.update_one(
                 {'_id':mission_id,
-                 'evaluators.user_id': user_id
+                 'evaluators.user_id': evaluator_model.user_id
                  },
             {
                 '$set':{
-                    'evaluators.$.user_id':user_id,
-                    'evaluators.$.level_at_time': level_at_time,
-                    'evaluators.$.rank': rank,
-                    'evaluators.$.score': score,
-                    'evaluators.$.coins': coins,
-                    'evaluators.$.xp': xp,
+                    'evaluators.$.level_at_time':evaluator_model.user_level_at_time,
+                    'evaluators.$.rank': evaluator_model.rank,
+                    'evaluators.$.coins': evaluator_model.coins_earned,
+                    'evaluators.$.xp': evaluator_model.xp_earned,
+                    'evaluators.$.evaluate_at': evaluator_model.evaluate_at
 
                     }
                 }
             )
 
             if result.matched_count > 0:
-                logger.info(f'O usuário {user_id} foi avaliado com sucesso na missão {mission_id}, recebendo {xp}xp e {coins} moedas')
+                logger.info(f'O usuário {evaluator_model.user_id} foi avaliado com sucesso na missão {mission_id}, recebendo {evaluator_model.xp_earned}xp e {evaluator_model.coins_earned} moedas')
                 return True
 
-            logger.warning(f'Falha ao avaliar o usuário {user_id} na missão {mission_id}')
+            logger.warning(f'Falha ao avaliar o usuário {evaluator_model.user_id} na missão {mission_id}')
             return False
 
         except Exception as e:
-            logger.error(f'Erro ao tentar avaliar o usuário {user_id} na missão {mission_id}: {e}')
+            logger.error(f'Erro ao tentar avaliar o usuário {evaluator_model.user_id} na missão {mission_id}: {e}')
             return False

@@ -92,8 +92,6 @@ class EvaluatorModel(BaseModel):
 
     # dados da avaliação
     rank: Optional[EvaluationRank] = None
-    score: Optional[int] = None
-
     # recompensas recebidas
     xp_earned: int = 0
     coins_earned: int = 0
