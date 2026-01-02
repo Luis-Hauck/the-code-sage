@@ -1,0 +1,273 @@
+import logging
+from typing import Tuple
+from datetime import datetime
+import asyncio
+
+from repositories.user_repository import UserRepository
+from src.repositories.missions_repository import MissionRepository
+from src.database.models.mission import MissionStatus, MissionModel, EvaluatorModel, EvaluationRank
+from src.services.leveling_service import LevelingService
+
+logger = logging.getLogger(__name__)
+
+# Configuração de recompensas (Pode ir para um config.py depois)
+RANK_REWARDS = {
+    "S": {"xp": 50, "coins": 125},
+    "A": {"xp": 40, "coins": 100},
+    "B": {"xp": 30, "coins": 75},
+    "C": {"xp": 20, "coins": 50},
+    "D": {"xp": 10, "coins": 25},
+    "E": {"xp": 0, "coins": 0},
+}
+
+
+class MissionService:
+    def __init__(self, mission_repo: MissionRepository, leveling_service: LevelingService, user_repo:UserRepository):
+        self.mission_repo = mission_repo
+        self.leveling_service = leveling_service
+        self.user_repo = user_repo
+
+    async def register_mission(self, mission_id: int, title: str, author_id:int) -> bool:
+        """
+        Cria a missão assim que a thread é criada no Discord
+        :param mission_id: ID da thread(missão) no Discord;
+        :param title: Título da thread;
+        :param author_id: ID de quem criou a thread;
+        :return: (True/False, Mensagem).
+        """
+
+        mission = MissionModel(
+            _id=mission_id,
+            title=title,
+            creator_id=author_id,
+            created_at=datetime.now(),
+            status=MissionStatus.OPEN,
+            evaluators=[]
+        )
+
+        return await self.mission_repo.create(mission)
+
+    async def evaluate_user(self,mission_id:int, author_id, user_id, rank:str, guild) -> Tuple[bool, str]:
+        """
+        Lógica do comando /avaliar.
+        Valida, Premia (Leveling) e Registra (Mission).
+        :param mission_id: ID da thread(missão) no Discord;
+        :param author_id:ID de quem criou a thread;
+        :param user_id: ID do úsuario a ser avaliado;
+        :param rank: Nota que o úsuario recebeu.
+        :param guild: Guilda onde a thread foi criada.
+        :return: (True/False, Mensagem)
+        """
+
+        # Buscamos o user
+        user = await self.user_repo.get_by_id(user_id)
+
+        # Buscamos a missão
+        mission = await self.mission_repo.get_by_id(mission_id)
+        if not mission:
+            return False, 'Essa missão ainda não foi criada'
+
+        # Somente o autor pode avaliar
+        if mission.creator_id != author_id:
+            return False, 'Somente o criador da missão pode avaliar'
+
+        # Verifica se quem está sendo avaliado é diferente do autor
+        if author_id == user_id:
+            return False, 'Você não pode avaliar a si mesmo'
+
+        # Verificamos se úsuario já foi avaliado
+        already_evaluated = any(evaluator.user_id == user_id for evaluator in mission.evaluators)
+        if already_evaluated:
+            return False, 'Este usuário já foi avaliado'
+
+        # Calculamos as recompensas:
+        rank_upper = EvaluationRank(rank.upper())
+        base_rewards = RANK_REWARDS.get(rank_upper)
+
+        if not base_rewards:
+            return False, f'Selecione uma nota válida: {", ".join(RANK_REWARDS.keys())}'
+
+        # Calculo dos bonus
+        final_xp, final_coins, bonus_text = await self.leveling_service.calculate_bonus(
+            user,
+            base_rewards["xp"],
+            base_rewards["coins"])
+
+
+        # Entrega as recompensas
+        await self.leveling_service.grant_reward(user_id,
+                                                 final_xp,
+                                                 final_coins,
+                                                 guild)
+
+        # Nível após a missão
+        current_level = int(self.leveling_service.calculate_level(user.xp+final_xp))
+
+        # Cria a nova pessoa avaliada
+        new_evaluator = EvaluatorModel(
+            user_id=user_id,
+            username=user.username,
+            user_level_at_time=current_level,
+            rank=rank_upper,
+            xp_earned=final_xp,
+            coins_earned=final_coins,
+            evaluate_at=datetime.now()
+        )
+
+        await self.mission_repo.add_participant(mission_id, new_evaluator)
+
+        # Encerramento da missão em 5 minutos após a avaliação
+        asyncio.create_task(self.close_mission(guild.get_thread(mission_id), mission, 300))
+
+        return True, f'O usuário {user.user_id} foi avaliado com sucesso na missão {mission_id}.'
+
+
+
+
+    async def close_mission(self, thread_obj, mission_model: MissionModel, delay: int = 0):
+        """
+        Fecha missão no discord e atualiza o status no banco de dados.
+        :param thread_obj: Objeto da thread no Discord;
+        :param mission_model: Modelo do tipo MissionModel;
+        :param delay: Tempo em segundos para esperar antes de fechar a thread.
+        """
+
+        if delay > 0:
+            try:
+                await asyncio.sleep(delay)
+
+                # Alguém fechou manualmente enquanto a missão?
+                # Se sim, aborta para não fechar duas vezes ou bugar o chat.
+                current = await self.mission_repo.get_by_id(mission_model.mission_id)
+                if current and current.status == MissionStatus.CLOSED:
+                    return
+
+            except Exception as e:
+                logger.error(f"Erro durante o delay de fechamento: {e}")
+                return
+
+        try:
+            # Atualiza Banco
+            await self.mission_repo.update_status(
+                mission_id=mission_model.mission_id,
+                new_status=MissionStatus.CLOSED,
+                completed_at=datetime.now()
+            )
+
+            # Atualiza Discord
+            if thread_obj:
+                await thread_obj.edit(
+                    locked=True,
+                    archived=True,
+                    reason="Mission Closed"
+                )
+
+
+                if delay > 0:
+                    await thread_obj.send("Missão encerrada automaticamente.")
+
+        except Exception as e:
+            logger.warning(f'Erro ao finalizar missão {mission_model.mission_id}: {e}')
+
+    async def report_evaluation(self, mission_id: int, reporter_id: int, reason: str, mod_channel_obj) -> bool:
+        """
+        Envia um alerta para os moderadores sobre uma avaliação injusta.
+        :param mission_id: ID da missão;
+        :param reporter_id: ID do criador da missão;
+        :param reason: Motivo da reclamação;
+        :param mod_channel_obj: canal onde vai ser enviado o alerta;
+        :return: True caso obtenha sucesso, Flase caso contrário
+        """
+        mission = await self.mission_repo.get_by_id(mission_id)
+        if not mission:
+            return False
+
+        # Verifica se o reclamante realmente participou
+        participant = next((e for e in mission.evaluators if e.user_id == reporter_id), None)
+        if not participant:
+            return False
+
+        # Mudar o embed para o cog
+
+        report_desc = f"**Missão:** {mission.title} (ID: {mission_id})\n"
+        report_desc += f"**Reclamante:** <@{reporter_id}> (Nota atual: {participant.rank.value})\n"
+        report_desc += f"**Motivo:** {reason}\n"
+        report_desc += f"**Link:** <https://discord.com/channels/{mod_channel_obj.guild.id}/{mission_id}>"
+
+        try:
+            await mod_channel_obj.send(report_desc)
+            return True
+        except Exception as e:
+            logger.warning(f'Ocorreu um erro ao reportar a reclamação do user: {reporter_id} na missão: {mission_id}: {e}')
+            return False
+
+    async def adjust_evaluation(self, mission_id: int, target_user_id: int, new_rank_str: str, guild) -> Tuple[
+        bool, str]:
+        """
+        Altera a nota de um usuário, recalculando XP e Coins (Estorno + Novo Depósito).
+        :param mission_id:
+        :param target_user_id:
+        :param new_rank_str:
+        :param guild:
+        :return:
+        """
+        # Busca a missão
+        mission = await self.mission_repo.get_by_id(mission_id)
+        if not mission: return False, "Missão não encontrada."
+
+        # Busca o registro da avaliação antiga
+        # Usamos enumerate para saber o índice e atualizar no banco depois se precisar
+        old_eval = next((e for e in mission.evaluators if e.user_id == target_user_id), None)
+
+        if not old_eval:
+            return False, "Este usuário não possui uma avaliação nesta missão para ser ajustada."
+
+        # Valida Nova Nota
+        try:
+            new_rank_enum = EvaluationRank(new_rank_str.upper())
+        except ValueError:
+            return False, "Nota inválida."
+
+        if old_eval.rank == new_rank_enum:
+            return False, "A nova nota é igual à atual."
+
+        # Valores Antigos
+        xp_to_remove = old_eval.xp_earned
+        coins_to_remove = old_eval.coins_earned
+
+        # Valores Novos (Base)
+        new_base = RANK_REWARDS.get(new_rank_enum.value)
+
+        # Recalcula Bônus, ponto que o usário pode mudar os itens equipados, próxima versão adcionar os itens que o usuário tinha.
+        user = await self.user_repo.get_by_id(target_user_id)
+        final_new_xp, final_new_coins, _ = await self.leveling_service.calculate_bonus(user, new_base['xp'], new_base['coins'])
+
+        # Aplica a diferença entre os valores antigos e novos.
+        # Ex: Ganhou 50 (C), devia ganhar 500 (S). Delta = 450.
+        # Ex: Ganhou 500 (S), devia ganhar 50 (C). Delta = -450.
+
+        xp_diff= final_new_xp - xp_to_remove
+        coins_diff = final_new_coins - coins_to_remove
+
+        await self.leveling_service.grant_reward(
+            user_id=target_user_id,
+            xp_amount=xp_diff,
+            coins_amount=coins_diff,
+            guild=guild
+        )
+
+        # ATUALIZA O BANCO (Substitui o EvaluatorModel antigo pelo novo)
+        old_eval.rank = new_rank_enum
+        old_eval.xp_earned = final_new_xp
+        old_eval.coins_earned = final_new_coins
+        old_eval.evaluated_at = datetime.now()  # Opcional: atualizar data
+
+
+        success = await self.mission_repo.update_evaluator(
+                                                           mission_id=mission_id,
+                                                           evaluator_model=old_eval)
+
+        if success:
+            return True, f"Nota ajustada de **{old_eval.rank.value}** para **{new_rank_enum.value}**.\nAjuste de Saldo: {xp_diff:+d} XP | {coins_diff:+d} Coins."
+        else:
+            return False, "Erro ao atualizar banco de dados."
