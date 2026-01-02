@@ -4,16 +4,22 @@ from src.services.leveling_service import LevelingService
 from src.database.models.user import UserModel, UserStatus
 import datetime
 from src.database.models.level_rewards import LevelRewardsModel
+from src.database.models.effects import XpBoostPassive
+from src.database.models.item import ItemModel, ItemType
 
-
-# --- FIXTURES (A Preparação do Palco) ---
+# --- FIXTURES ---
 
 @pytest.fixture
 def mock_user_repo():
     repo = MagicMock()
-    repo.add_xp_coins = AsyncMock()  # O método que tem await
+    repo.add_xp_coins = AsyncMock()
     return repo
 
+@pytest.fixture
+def mock_item_repo():
+    repo = MagicMock()
+    repo.get_by_id = AsyncMock()
+    return repo
 
 @pytest.fixture
 def mock_rewards_repo():
@@ -25,9 +31,14 @@ def mock_rewards_repo():
 
 @pytest.fixture
 def service(mock_user_repo, mock_rewards_repo):
-    svc = LevelingService(mock_user_repo, mock_rewards_repo)
+    svc = LevelingService(mock_user_repo, mock_rewards_repo, mock_item_repo)
     svc.BASE_XP_FACTOR = 100
     return svc
+
+@pytest.fixture
+def leveling_service_setup(mock_user_repo, mock_rewards_repo, mock_item_repo):
+    service = LevelingService(mock_user_repo, mock_rewards_repo, mock_item_repo)
+    return service, mock_item_repo
 
 
 @pytest.fixture
@@ -141,3 +152,57 @@ async def test_sync_roles_add_new(service, mock_rewards_repo, mock_guild, mock_m
 
 
     mock_member.add_roles.assert_awaited_once_with(role_mestre_obj)
+
+# --- TESTES DE CÁLCULO DE BÔNUS ---
+
+@pytest.mark.asyncio
+async def test_calculate_bonus_with_xp_item(leveling_service_setup):
+    """Testa se o cálculo de bônus aplica o multiplicador de XP corretamente."""
+    service, item_repo = leveling_service_setup
+
+    # DADOS
+    user = UserModel(_id=1,
+                     username="Test",
+                     coins=0, xp=0,
+                     equipped_item_id=99,
+                     joined_at=datetime.date.today())
+
+    # Mock do Item (Anel de +50% XP)
+    item_repo.get_by_id.return_value = ItemModel(
+        _id=99,
+        name="Anel Sábio",
+        price=100,
+        item_type=ItemType.EQUIPPABLE,
+        description="...",
+        passive_effects=[XpBoostPassive(type="xp_boost", multiplier=0.5)],
+        effect=None
+    )
+
+    base_xp = 100
+    base_coins = 100
+
+    # AÇÃO
+    final_xp, final_coins, text = await service.calculate_bonus(user, base_xp, base_coins)
+
+    # VERIFICAÇÃO
+    assert final_xp == 150  # 100 + 50%
+    assert final_coins == 100  # Sem bônus
+
+
+@pytest.mark.asyncio
+async def test_calculate_bonus_no_item(leveling_service_setup):
+    """Testa se retorna o valor base quando não tem item."""
+    service, item_repo = leveling_service_setup
+
+    user = UserModel(_id=1,
+                     username="Test",
+                     coins=0,
+                     xp=0,
+                     equipped_item_id=None,
+                     joined_at=datetime.date.today())
+
+    final_xp, final_coins, text = await service.calculate_bonus(user, 100, 100)
+
+    assert final_xp == 100
+    assert final_coins == 100
+

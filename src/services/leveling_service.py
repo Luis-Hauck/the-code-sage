@@ -1,5 +1,8 @@
 import logging
+from typing import Tuple
 
+from database.models.user import UserModel
+from repositories.item_repository import ItemRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.level_rewards_repository import LevelRewardsRepository
 
@@ -9,10 +12,12 @@ logger  = logging.getLogger(__name__)
 class LevelingService:
     def __init__(self,
                  user_repo: UserRepository,
-                 rewards_repo: LevelRewardsRepository
+                 rewards_repo: LevelRewardsRepository,
+                 item_repo: ItemRepository
                  ):
         self.user_repo = user_repo
         self.rewards_repo = rewards_repo
+        self.item_repo = item_repo
 
     # Constante de da dificuldade
     BASE_XP_FACTOR = 150
@@ -94,6 +99,40 @@ class LevelingService:
                 else:
                     logger.warning(f"Cargo ID {target_role_id} não encontrado no Discord!")
 
+
+    async def calculate_bonus(self, user: UserModel, base_xp: int, base_coins) -> Tuple[int, int, str]:
+        """
+        Método auxiliar para verificar itens equipados e aplicar multiplicadores de XP/Moedas.
+        """
+        xp_multiplier = 1.0
+        coins_multiplier = 1.0
+        bonus_text = ""
+
+
+        if user and user.equipped_item_id:
+            item = await self.item_repo.get_by_id(user.equipped_item_id)
+
+            # Verifica se o item existe e tem efeitos passivos
+            if item and item.passive_effects:
+                for effect in item.passive_effects:
+                    if effect.type == "xp_boost":
+                        xp_multiplier += effect.multiplier
+
+                    elif effect.type == "coins_boost":
+                        coins_multiplier += effect.multiplier
+
+        # Calcula XP final
+        final_xp = int(base_xp * xp_multiplier)
+        final_coins = int(base_coins * coins_multiplier)
+
+        if xp_multiplier > 1.0 or coins_multiplier > 1.0:
+            xp_diff = final_xp - base_xp
+            coins_diff = final_coins - base_coins
+
+            bonus_text = str((f"Bônus de XP d o Item: +{xp_diff}\n"
+                        f"Bônus de Moedas do Item: +{coins_diff}"))
+
+        return final_xp, final_coins, bonus_text
 
     async def grant_reward(self, user_id: int, xp_amount:int, coins_amount: int, guild):
         """
