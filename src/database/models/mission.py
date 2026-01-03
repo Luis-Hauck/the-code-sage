@@ -79,6 +79,23 @@ class EvaluationRank(str, Enum):
             case _:
                 return cls.E
 
+    @property
+    def thumbnail_url(self) -> str:
+        """
+        Caminho das imagens para os ranks das missões
+        :return: O caminho da imagem.
+        """
+
+        images = {
+            'S': 'https://cdn.discordapp.com/attachments/1253476072553451590/1456761385416659095/S.PNG?ex=69598a43&is=695838c3&hm=83504aedf15a2657971457a855daba094283c5579292308df47d344bc9dc0908&',
+            'A': 'https://cdn.discordapp.com/attachments/1253476072553451590/1456761380832018522/A.PNG?ex=69598a42&is=695838c2&hm=fd422b48bc8dd54a4ef0727b76c3914502453ad1ea8cd61cc4d380d909cd469f&',
+            'B': 'https://cdn.discordapp.com/attachments/1253476072553451590/1456761382300291102/B.PNG?ex=69598a42&is=695838c2&hm=425cfcf6f5bbb644b574cd3805bbaf50142b01906c71ebeb5fd4c440e9f15246&',
+            'C': 'https://cdn.discordapp.com/attachments/1253476072553451590/1456761382878842931/C.PNG?ex=69598a42&is=695838c2&hm=53f37610366778c08c2fa722dcf50f313077ec1632b76eaf76335830cb1d8fce&',
+            'D': 'https://cdn.discordapp.com/attachments/1253476072553451590/1456761383990460458/D.PNG?ex=69598a43&is=695838c3&hm=0b63800cc0747703991aa5c56f9e18fb335c96dc3bc87747a263caf038a046c6&',
+            'E': 'https://cdn.discordapp.com/attachments/1253476072553451590/1456761384653164594/E.PNG?ex=69598a43&is=695838c3&hm=a34976596eaee5faa16d28e59597706a521454f1d5c7e92327afb8c618de5ae6&'
+        }
+
+        return images.get(self.value, '')
 
 
 class EvaluatorModel(BaseModel):
