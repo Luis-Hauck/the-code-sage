@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, Optional, Any
+from typing import Dict, Tuple, Optional, Any
 from datetime import datetime
 import asyncio
 
@@ -157,25 +157,32 @@ class MissionService:
 
 
 
-    async def report_evaluation(self, mission_id: int, reporter_id: int, reason: str) -> Tuple[bool, Optional[MissionModel]]:
+    async def report_evaluation(self, mission_id: int, reporter_id: int, reason: str) -> Tuple[bool, Optional[Dict[str, Any]]] | Tuple[bool, str]:
         """
         Envia um alerta para os moderadores sobre uma avaliação injusta.
         :param mission_id: ID da missão;
-        :param reporter_id: ID do criador da missão;
+        :param reporter_id: ID de quem reportou a missão;
         :param reason: Motivo da reclamação;
-        :return: True caso obtenha sucesso, Flase caso contrário
+        :return: (True, {dados_do_report}) ou (False, "Mensagem de erro")
         """
         mission = await self.mission_repo.get_by_id(mission_id)
         if not mission:
-            return False, None
+            return False, "Missão não encontrada."
 
         # Verifica se o reclamante realmente participou
         participant = next((e for e in mission.evaluators if e.user_id == reporter_id), None)
         if not participant:
-            return False, None
+            return False, 'Você não foi avaliado nesta missão, então não pode reportar.'
 
         logger.info(f'Ocorreu uma denúncia na missão: {mission.mission_id} o usuário {participant.user_id} reclamou com o motivo: {reason}')
-        return True, mission
+        return True, {
+            "mission_title": mission.title,
+            "mission_id": mission.mission_id,
+            "reporter_id": reporter_id,
+            "reporter_name": participant.username,
+            "current_rank": participant.rank,
+            "reason": reason
+        }
 
     async def adjust_evaluation(self, mission_id: int, target_user_id: int, new_rank_str: str, guild) -> Tuple[
         bool, Any]:
