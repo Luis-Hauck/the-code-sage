@@ -129,50 +129,33 @@ class MissionService:
 
 
 
-    async def close_mission(self, thread_obj, mission_model: MissionModel, delay: int = 0):
+    async def close_mission(self, mission_id: int):
         """
-        Fecha missão no discord e atualiza o status no banco de dados.
-        :param thread_obj: Objeto da thread no Discord;
-        :param mission_model: Modelo do tipo MissionModel;
-        :param delay: Tempo em segundos para esperar antes de fechar a thread.
+        Atualiza o status da missão no banco para CLOSED.
+        :param mission_id: ID da missão a ser fechada.
+        :return: True se foi fechada agora, False caso contrário
         """
-
-        if delay > 0:
-            try:
-                await asyncio.sleep(delay)
-
-                # Alguém fechou manualmente enquanto a missão?
-                # Se sim, aborta para não fechar duas vezes ou bugar o chat.
-                current = await self.mission_repo.get_by_id(mission_model.mission_id)
-                if current and current.status == MissionStatus.CLOSED:
-                    return
-
-            except Exception as e:
-                logger.error(f"Erro durante o delay de fechamento: {e}")
-                return
 
         try:
-            # Atualiza Banco
+            # Verifica se já não está fechada (para evitar concorrência)
+            current = await self.mission_repo.get_by_id(mission_id)
+            if current and current.status == MissionStatus.CLOSED:
+                return False
+
             await self.mission_repo.update_status(
-                mission_id=mission_model.mission_id,
+                mission_id=mission_id,
                 new_status=MissionStatus.CLOSED,
                 completed_at=datetime.now()
             )
 
-            # Atualiza Discord
-            if thread_obj:
-                await thread_obj.edit(
-                    locked=True,
-                    archived=True,
-                    reason="Mission Closed"
-                )
-
-
-                if delay > 0:
-                    await thread_obj.send("Missão encerrada automaticamente.")
+            logger.info(f"Missão {mission_id} marcada como finalizada no banco.")
+            return True
 
         except Exception as e:
-            logger.warning(f'Erro ao finalizar missão {mission_model.mission_id}: {e}')
+            logger.error(f"Erro ao finalizar missão {mission_id}: {e}")
+            return False
+
+
 
     async def report_evaluation(self, mission_id: int, reporter_id: int, reason: str) -> Tuple[bool, Optional[MissionModel]]:
         """
