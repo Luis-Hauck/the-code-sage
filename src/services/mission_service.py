@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple
+from typing import Tuple, Optional, Any
 from datetime import datetime
 import asyncio
 
@@ -47,7 +47,7 @@ class MissionService:
 
         return await self.mission_repo.create(mission)
 
-    async def evaluate_user(self,mission_id:int, author_id, user_id, rank:str, guild) -> Tuple[bool, str]:
+    async def evaluate_user(self,mission_id:int, author_id, user_id, rank:str, guild) -> Tuple[bool, Any]:
         """
         Lógica do comando /avaliar.
         Valida, Premia (Leveling) e Registra (Mission).
@@ -119,7 +119,12 @@ class MissionService:
         # Encerramento da missão em 5 minutos após a avaliação
         asyncio.create_task(self.close_mission(guild.get_thread(mission_id), mission, 300))
 
-        return True, f'O usuário {user.user_id} foi avaliado com sucesso na missão {mission_id}.'
+        return True, {
+            "rank": rank_upper,
+            "xp": final_xp,
+            "coins": final_coins,
+            "bonus": bonus_text
+        }
 
 
 
@@ -169,40 +174,28 @@ class MissionService:
         except Exception as e:
             logger.warning(f'Erro ao finalizar missão {mission_model.mission_id}: {e}')
 
-    async def report_evaluation(self, mission_id: int, reporter_id: int, reason: str, mod_channel_obj) -> bool:
+    async def report_evaluation(self, mission_id: int, reporter_id: int, reason: str) -> Tuple[bool, Optional[MissionModel]]:
         """
         Envia um alerta para os moderadores sobre uma avaliação injusta.
         :param mission_id: ID da missão;
         :param reporter_id: ID do criador da missão;
         :param reason: Motivo da reclamação;
-        :param mod_channel_obj: canal onde vai ser enviado o alerta;
         :return: True caso obtenha sucesso, Flase caso contrário
         """
         mission = await self.mission_repo.get_by_id(mission_id)
         if not mission:
-            return False
+            return False, None
 
         # Verifica se o reclamante realmente participou
         participant = next((e for e in mission.evaluators if e.user_id == reporter_id), None)
         if not participant:
-            return False
+            return False, None
 
-        # Mudar o embed para o cog
-
-        report_desc = f"**Missão:** {mission.title} (ID: {mission_id})\n"
-        report_desc += f"**Reclamante:** <@{reporter_id}> (Nota atual: {participant.rank.value})\n"
-        report_desc += f"**Motivo:** {reason}\n"
-        report_desc += f"**Link:** <https://discord.com/channels/{mod_channel_obj.guild.id}/{mission_id}>"
-
-        try:
-            await mod_channel_obj.send(report_desc)
-            return True
-        except Exception as e:
-            logger.warning(f'Ocorreu um erro ao reportar a reclamação do user: {reporter_id} na missão: {mission_id}: {e}')
-            return False
+        logger.info(f'Ocorreu uma denúncia na missão: {mission.mission_id} o usuário {participant.user_id} reclamou com o motivo: {reason}')
+        return True, mission
 
     async def adjust_evaluation(self, mission_id: int, target_user_id: int, new_rank_str: str, guild) -> Tuple[
-        bool, str]:
+        bool, Any]:
         """
         Altera a nota de um usuário, recalculando XP e Coins (Estorno + Novo Depósito).
         :param mission_id:
@@ -268,6 +261,13 @@ class MissionService:
                                                            evaluator_model=old_eval)
 
         if success:
-            return True, f"Nota ajustada de **{old_eval.rank.value}** para **{new_rank_enum.value}**.\nAjuste de Saldo: {xp_diff:+d} XP | {coins_diff:+d} Coins."
+            logger.info(f"Rank ajustado de **{old_eval.rank.value}** para **{new_rank_enum.value}**.\nAjuste de Saldo: {xp_diff:+d} XP | {coins_diff:+d} Coins na missão {mission_id}.")
+            return True, {
+                "old_rank": old_eval.rank.value,
+                "new_rank": new_rank_enum,
+                "xp_diff": xp_diff,
+                "coins_diff": coins_diff
+            }
         else:
-            return False, "Erro ao atualizar banco de dados."
+            logger.error(f"Erro de banco ao ajustar avaliação na missão {mission_id}")
+            return False, "Erro ao ajustar a avalição."
