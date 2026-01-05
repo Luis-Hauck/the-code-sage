@@ -116,8 +116,6 @@ class MissionService:
 
         await self.mission_repo.add_participant(mission_id, new_evaluator)
 
-        # Encerramento da missão em 5 minutos após a avaliação
-        asyncio.create_task(self.close_mission(guild.get_thread(mission_id), mission, 300))
 
         return True, {
             "rank": rank_upper,
