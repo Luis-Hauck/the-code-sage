@@ -81,8 +81,12 @@ class MissionService:
             return False, 'Este usuário já foi avaliado'
 
         # Calculamos as recompensas:
-        rank_upper = EvaluationRank(rank.upper())
-        base_rewards = RANK_REWARDS.get(rank_upper)
+        rank_upper = EvaluationRank.get_or_none(rank)
+
+        if not rank_upper:
+            return False, f'Selecione uma nota válida: {", ".join(RANK_REWARDS.keys())}'
+
+        base_rewards = RANK_REWARDS.get(rank_upper.value)
 
         if not base_rewards:
             return False, f'Selecione uma nota válida: {", ".join(RANK_REWARDS.keys())}'

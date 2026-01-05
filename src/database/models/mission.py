@@ -23,6 +23,14 @@ class EvaluationRank(str, Enum):
     D = 'D'
     E = 'E'
 
+    @classmethod
+    def get_or_none(cls, value: str):
+        """Tenta retornar o Enum, se falhar retorna None."""
+        try:
+            return cls(value.upper())
+        except ValueError:
+            return None
+
     @property
     def score(self) -> int:
         """
