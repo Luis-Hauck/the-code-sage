@@ -62,6 +62,9 @@ class MissionService:
         # Buscamos o user
         user = await self.user_repo.get_by_id(user_id)
 
+        if not user:
+            return False, 'Usuário não encontrado para ser avaliado!'
+
         # Buscamos a missão
         mission = await self.mission_repo.get_by_id(mission_id)
         if not mission:
