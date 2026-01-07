@@ -1,7 +1,10 @@
 from pymongo.database import Database
 import logging
-from src.database.models.user import UserModel, UserStatus
+from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
+from typing import Optional
+
+from src.database.models.user import UserModel, UserStatus
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +73,7 @@ class UserRepository:
             logger.error(f'Falha ao atualizar os status do user {user_id}: {e}')
             return False
 
-    async def add_xp_coins(self, user_id:int, xp:float, coins:float) -> bool:
+    async def add_xp_coins(self, user_id:int, xp:float, coins:float) -> Optional[UserModel]:
         """
         Adicona XP e moedas ao usuário pelo ID.
 
@@ -78,34 +81,34 @@ class UserRepository:
             user_id: ID do usuário
             xp: Valor de XP a ser adicionado
             coins: Valor de moedas a ser adicionado
-
         Returns:
-            bool: True se atualizou com sucesso ou se não tiver dados a serem atualizados, False caso contrário
+            bool: Retorna um objeto UserModel do usuário atualizado.
         """
         # Se o xp e moedas forem 0 não prosseguimos
         if not xp and not coins:
             return True
         try:
-            result = await self.collection.update_one(
+            result = await self.collection.find_one_and_update(
                 {'_id': user_id},
                 {
                     '$inc': {
                     'xp':xp,
                     'coins':coins
                     }
-                }
+                },
+                return_document=ReturnDocument.AFTER
             )
-            if result.modified_count > 0:
+            if result:
                 logger.info(f'XP e moedas incrementadas para user {user_id}')
-                return True
+                return UserModel(**result)
 
             logger.warning(f'Falha ao incrementar: Usuário {user_id} não encontrado.')
-            return False
+            return None
 
 
         except Exception as e:
             logger.error(f'Falha ao incremenatar xp e moedas ao user {user_id}: {e}')
-            return False
+            return None
 
     async def get_by_id(self, user_id:int):
         """
