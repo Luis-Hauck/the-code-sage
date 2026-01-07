@@ -38,7 +38,7 @@ class MissionEmbeds:
         :return: Retorna a embed gerada.
         """
 
-        embed = discord.Embed(title=f'{target_user.mention} Completou a missão!',
+        embed = discord.Embed(title=f'{target_user.display_name} Completou a missão!',
                               description=f'Obrigado por contribuir com a comunidade!',
                               color=discord.Color(rank.color)
                               )
@@ -66,7 +66,6 @@ class MissionEmbeds:
                                            f'> 💎 **Não esqueça de recompensar o Aventureiro que te ajudou!**\n'
                                            f"> Ao final, use o comando: `/avaliar`\n"
                                            f"> Isso garante **XP** e **Moedas** para quem te salvou.\n\n"
-
                                            "Se você completar a missão sozinho, use o comando `/encerrar_missão`."
                                            ),
 
