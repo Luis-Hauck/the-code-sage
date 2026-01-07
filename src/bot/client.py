@@ -1,9 +1,18 @@
 import os
+import pathlib
 import discord
 from discord.ext import commands
 import logging
 from src.app.config import GUILD_ID
+
+
 from src.database.connection import connect_to_database
+from src.repositories.user_repository import UserRepository
+from src.repositories.item_repository import ItemRepository
+from src.repositories.missions_repository import MissionRepository
+from src.repositories.level_rewards_repository import LevelRewardsRepository
+from src.services.mission_service import MissionService
+from services.leveling_service import LevelingService
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +25,9 @@ class TheCodeSageBot(commands.Bot):
                          intents=discord.Intents.all() # Define as intents do bot
                          )
         self.db = None
-        self.repositories ={}
+        self.mission_service = None
+        self.leveling_service = None
+
 
     async def setup_hook(self):
         """"O hook é chamado automaticamente antes do bot logar"""
@@ -25,13 +36,23 @@ class TheCodeSageBot(commands.Bot):
         self.db = await connect_to_database()
 
         # Inicializa cada repositório explicitamente
-        #self.repositories["user"] = UserRepository(self.db)
-        #self.repositories["item"] = ItemRepository(self.db)
-        # ... e assim por diante
+        user_repo = UserRepository(self.db)
+        item_repo = ItemRepository(self.db)
+        mission_repo = MissionRepository(self.db)
+        rewards_repo = LevelRewardsRepository(self.db)
+
+        # inicializa os services
+        self.leveling_service = LevelingService(user_repo, rewards_repo, item_repo)
+        self.mission_service = MissionService(mission_repo, self.leveling_service,user_repo)
+
+        logger.info("Services e Repositories inicializados com sucesso!")
 
         #Carregamos todos os Cogs da pasta cogs
+        current_path = pathlib.Path(__file__).parent
+        cogs_path = current_path.parent /'cogs'
         # Percorremos cada arquivo da pasat cogs:
-        for filename in os.listdir('./src/cogs'):
+
+        for filename in os.listdir(cogs_path):
             # Se for um arquivo python e não iniciar com __
             if filename.endswith('.py') and not filename.startswith('__'):
                 try:
@@ -62,7 +83,7 @@ class TheCodeSageBot(commands.Bot):
         """Hook chamado quando o bot é desligado"""
         logger.info('Encerrando o bot...')
 
-        if self.db:
+        if self.db is not None:
             self.db.close()
             logger.info('Conexão com MongoDB encerrada.')
 

@@ -86,7 +86,7 @@ class UserRepository:
         """
         # Se o xp e moedas forem 0 retornamos o UserModel pelo ID.
         if not xp and not coins:
-            return self.get_by_id(user_id)
+            return await self.get_by_id(user_id)
         try:
             result = await self.collection.find_one_and_update(
                 {'_id': user_id},
