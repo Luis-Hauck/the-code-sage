@@ -84,9 +84,9 @@ class UserRepository:
         Returns:
             bool: Retorna um objeto UserModel do usuário atualizado.
         """
-        # Se o xp e moedas forem 0 não prosseguimos
+        # Se o xp e moedas forem 0 retornamos o UserModel pelo ID.
         if not xp and not coins:
-            return True
+            return self.get_by_id(user_id)
         try:
             result = await self.collection.find_one_and_update(
                 {'_id': user_id},
