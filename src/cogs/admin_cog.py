@@ -3,14 +3,14 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime
 
-from src.database.models.user import UserStatus
+from src.database.models.user import UserStatus, UserModel
 
 
 class AdminCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="sync_users", description=" egistra todos os membros atuais do server no banco de dados.")
+    @app_commands.command(name="sync_users", description="Registra todos os membros atuais do server no banco de dados.")
     @app_commands.checks.has_permissions(administrator=True)
     async def sync_users(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -27,20 +27,20 @@ class AdminCog(commands.Cog):
             if member.bot:
                 continue
 
-            # Verifica se já existe
-            exists = await user_repo.get_by_id(member.id)
-            if not exists:
-                await user_repo.create_user(
-                    user_id=member.id,
+            user = UserModel(_id=member.id,
                     username=member.name,
                     xp=0,
-                    coin=0,
+                    coins=0,
                     inventory = {},
                     equipped_item_id = None,
                     status=UserStatus.ACTIVE,
                     joined_at=datetime.now(),
                     role_ids=[]
-                )
+                             )
+            # Verifica se já existe
+            exists = await user_repo.get_by_id(member.id)
+            if not exists:
+                await user_repo.create(user)
 
                 count += 1
             else:
