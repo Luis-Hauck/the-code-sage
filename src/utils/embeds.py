@@ -6,20 +6,20 @@ from discord.types import embed
 
 from src.database.models.mission import EvaluationRank
 
-def create_error_embed(message: str) -> discord.Embed:
+def create_error_embed(title:str, message: str) -> discord.Embed:
     """
     Função gerar embeds de erro.
     """
-    return discord.Embed(
+    return discord.Embed(title=title,
         description=message,
         color=discord.Color.red()
     )
 
-def create_info_embed(message: str) -> discord.Embed:
+def create_info_embed(title:str, message: str) -> discord.Embed:
     """
     Função para avisos simples (Azul/Cinza).
     """
-    return discord.Embed(
+    return discord.Embed(title=title,
         description=message,
         color=discord.Color.blue()
     )
