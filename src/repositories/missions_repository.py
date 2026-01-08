@@ -146,8 +146,8 @@ class MissionRepository:
                 '$set':{
                     'evaluators.$.level_at_time':evaluator_model.user_level_at_time,
                     'evaluators.$.rank': evaluator_model.rank,
-                    'evaluators.$.coins': evaluator_model.coins_earned,
-                    'evaluators.$.xp': evaluator_model.xp_earned,
+                    'evaluators.$.coins_earned': evaluator_model.coins_earned,
+                    'evaluators.$.xp_earned': evaluator_model.xp_earned,
                     'evaluators.$.evaluate_at': evaluator_model.evaluate_at
 
                     }
