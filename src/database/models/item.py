@@ -32,7 +32,7 @@ class ItemModel(BaseModel):
     price: int
     item_type: ItemType
     effect: Optional[AnyEffect] = Field(None, discriminator='type')
-    passive_effects: List[AnyPassiveEffect] = []
+    passive_effects: List[AnyPassiveEffect] = Field(default=[], discriminator='type')
 
     class Config:
         populate_by_name = True
