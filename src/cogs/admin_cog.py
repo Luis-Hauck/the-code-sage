@@ -1,10 +1,14 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from datetime import datetime
+
+import logging
 
 from src.database.models.user import UserStatus, UserModel
+from src.utils.helpers import is_mission_channel
+from src.utils.embeds import MissionEmbeds, create_error_embed, create_info_embed
 
+logger = logging.getLogger(__name__)
 
 class AdminCog(commands.Cog):
     def __init__(self, bot):
@@ -34,7 +38,7 @@ class AdminCog(commands.Cog):
                     inventory = {},
                     equipped_item_id = None,
                     status=UserStatus.ACTIVE,
-                    joined_at=datetime.now(),
+                    joined_at=member.joined_at,
                     role_ids=[]
                              )
             # Verifica se já existe
@@ -48,6 +52,49 @@ class AdminCog(commands.Cog):
 
         await interaction.followup.send(
             f"✅ Sincronização concluída!\n🆕 Cadastrados: {count}\n⏭️ Já existiam: {ignored}")
+
+
+
+    @app_commands.command(name="ajustar_avaliacao",
+                          description="[ADM] Ajusta o rank de uma missão.")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.describe(user='O usuário que será reavaliado.', novo_rank='Novo rank que  usuário vai receber!')
+    async def adjust_rank(self, interaction: discord.Interaction, user:discord.Member, novo_rank: str):
+        """
+        Comando utilizado pelos administradores para ajustar uma avaliação!
+        :param user: Usuário que será reavaliado.
+        :param interaction: discord.Interaction
+        :param novo_rank: Novo rank.
+        """
+        # verifica se é uma Thread
+        if not is_mission_channel(interaction):
+            return
+
+        await interaction.response.defer()
+
+        # Chamamos o service para ajustar o rank
+        success, data = await self.bot.mission_service.adjust_evaluation(
+            interaction.channel.id,
+            user.id,
+            novo_rank,
+            interaction.guild
+        )
+
+        if success:
+            success_adjust_rank_embed = MissionEmbeds.admin_adjustment(target_user=user,
+                                                                       old_rank=data['old_rank'],
+                                                                       new_rank=data['new_rank'],
+                                                                       xp_diff=data['xp_diff'],
+                                                                       coins_diff=data['coins_diff']
+            )
+            await interaction.followup.send(embed=success_adjust_rank_embed)
+            logger.info(f'O usuário {user.display_name} teve o rank alterado de:\n '
+                        f'{data["old_rank"]} para {data["new_rank"]}.\n'
+                        f'Diferença de XP: {data["xp_diff"]}\n'
+                        f'Diferença de Moedas: {data["coins_diff"]}')
+        else:
+            logger.error(f'Erro ao ajustar o rank da missão com id {interaction.channel.id}')
+            await interaction.followup.send(embed=create_error_embed(title='Erro ao ajustar rank', message=data), ephemeral=True)
 
 
 async def setup(bot):

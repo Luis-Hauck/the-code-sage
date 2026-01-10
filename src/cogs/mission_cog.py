@@ -1,12 +1,15 @@
 import discord
-from src.app.config import MISSION_CHANNEL_ID
+from src.app.config import MOD_LOG_CHANNEL_ID
 from discord.ext import commands
 from discord import app_commands
 import asyncio
+import logging
 
-from src.services.mission_service import MissionService
 from src.database.models.mission import EvaluationRank
 from src.utils.embeds import MissionEmbeds, create_error_embed, create_info_embed
+from src.utils.helpers import is_mission_channel
+
+logger = logging.getLogger(__name__)
 
 class MissionCog(commands.Cog):
     def __init__(self, bot):
@@ -25,14 +28,8 @@ class MissionCog(commands.Cog):
         :return:
         """
         # verifica se é uma Thread
-        if not isinstance(interaction.channel, discord.Thread) or not interaction.channel.parent_id == MISSION_CHANNEL_ID:
-            wrong_channel_embed = create_error_embed(title='Você não pode usar esse comando aqui!',
-                                                     message='Esse comando só pode ser usado dentro de uma missão'
-
-            )
-            await interaction.response.send_message(embed=wrong_channel_embed, ephemeral=True)
+        if not is_mission_channel(interaction):
             return
-
 
         await interaction.response.defer()
 
@@ -92,7 +89,7 @@ class MissionCog(commands.Cog):
 
         # Manda a mensagem que encerrou a thread
         try:
-            embed = create_info_embed(title='Missão Encerrada!', message="🔒 Missão encerrada automaticamente.")
+            embed = create_info_embed(title='Missão Encerrada!', message="🔒 A Missão foi encerrada e arquivada!")
             await thread.send(embed=embed)
 
             # Tranca a thread no Discord
@@ -100,6 +97,77 @@ class MissionCog(commands.Cog):
 
         except Exception as e:
             print(f"Erro ao fechar thread visualmente: {e}")
+
+    @app_commands.command(name="solicitar_revisao",
+                          description="Reporta a insatisfação do Rank da missão do Aventureiro")
+    @app_commands.describe(motivo='Explique o por que o rank da missão está errado')
+    async def review_mission(self, interaction: discord.Interaction, motivo: str):
+        """
+        Comando para solicitar a revisão do rank.
+        :param interaction: Objeto do discord.Interaction
+        :param motivo: Motivo para abrir a solicitação
+        """
+        # verifica se é uma Thread
+        if not await is_mission_channel(interaction):
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        success, data = await self.bot.mission_service.report_evaluation(interaction.channel.id,
+                                                                         interaction.user.id,
+                                                                         motivo)
+
+        if success:
+            # Passamos o canal de logs da moderação
+            mod_channel = interaction.guild.get_channel(MOD_LOG_CHANNEL_ID)
+
+            if mod_channel:
+                embed_report = MissionEmbeds.mission_report(mission_id=interaction.channel.id,
+                                                            mission_title=interaction.channel.name,
+                                                            reporter_id=interaction.user.id,
+                                                            reporter_name=interaction.user.display_name,
+                                                            current_rank=data['current_rank'],
+                                                            reason=motivo
+                                                            )
+                await mod_channel.send(embed=embed_report)
+
+            confirmation_report_embed = MissionEmbeds.report_confirmation()
+
+            await interaction.followup.send(embed=confirmation_report_embed)
+            logger.info(f'Sucesso ao reportar a missão {interaction.channel.id}.')
+        else:
+            await interaction.followup.send(embed=create_error_embed(title='Erro ao reportar', message=data),
+                                            ephemeral=True)
+            logger.error(f'Canal de moderações não encontrado: {MOD_LOG_CHANNEL_ID}')
+
+    @app_commands.command(name="encerrar_missao",
+                          description="Encerra a missão e arquiva o canal (Use caso tenha resolvido sozinho).")
+    async def close_mission_command(self, interaction: discord.Interaction):
+        """
+        Permite que o dono da missão encerre o canal manualmente.
+        """
+        # Verifica se é uma Thread de missão
+        if not await is_mission_channel(interaction):
+            return
+
+        # Verifica se quem chamou é o DONO da missão (ou um Admin)
+        if interaction.user.id != interaction.channel.owner_id and not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message(
+                embed=create_error_embed(title="Sem permissão",
+                                         message="Apenas o dono da missão ou um Admin podem encerrá-la."),
+                ephemeral=True
+            )
+            return
+        # Executa o encerramento
+        await interaction.response.send_message(
+            embed=create_info_embed(
+                title="A Missão Vai sSr Encerrada!",
+                message=f"O aventureiro {interaction.user.mention} decidiu encerrar esta missão.\nO canal será arquivado!."
+            )
+        )
+        logger.info(f"O usuário {interaction.user.id} encerrou a missão {interaction.channel.id} manualmente.")
+        self.bot.loop.create_task(self.close_thread_task(interaction.channel, 5))
+
 
 async def setup(bot):
     await bot.add_cog(MissionCog(bot))
