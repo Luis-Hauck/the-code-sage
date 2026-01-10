@@ -219,6 +219,8 @@ class MissionService:
         if old_eval.rank == new_rank_enum:
             return False, "A nova nota é igual à atual."
 
+        previous_rank = old_eval.rank
+
         # Valores Antigos
         xp_to_remove = old_eval.xp_earned
         coins_to_remove = old_eval.coins_earned
@@ -248,7 +250,7 @@ class MissionService:
         old_eval.rank = new_rank_enum
         old_eval.xp_earned = final_new_xp
         old_eval.coins_earned = final_new_coins
-        old_eval.evaluated_at = datetime.now()  # Opcional: atualizar data
+        old_eval.evaluate_at = datetime.now()  
 
 
         success = await self.mission_repo.update_evaluator(
@@ -256,9 +258,9 @@ class MissionService:
                                                            evaluator_model=old_eval)
 
         if success:
-            logger.info(f"Rank ajustado de **{old_eval.rank.value}** para **{new_rank_enum.value}**.\nAjuste de Saldo: {xp_diff:+d} XP | {coins_diff:+d} Coins na missão {mission_id}.")
+            logger.info(f"Rank ajustado de **{previous_rank.value}** para **{new_rank_enum.value}**.\nAjuste de Saldo: {xp_diff:+d} XP | {coins_diff:+d} Coins na missão {mission_id}.")
             return True, {
-                "old_rank": old_eval.rank.value,
+                "old_rank": previous_rank,
                 "new_rank": new_rank_enum,
                 "xp_diff": xp_diff,
                 "coins_diff": coins_diff
