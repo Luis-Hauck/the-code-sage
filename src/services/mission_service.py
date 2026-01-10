@@ -185,7 +185,7 @@ class MissionService:
             "mission_id": mission.mission_id,
             "reporter_id": reporter_id,
             "reporter_name": participant.username,
-            "current_rank": participant.rank,
+            "current_rank": participant.rank.value,
             "reason": reason
         }
 
@@ -250,7 +250,7 @@ class MissionService:
         old_eval.rank = new_rank_enum
         old_eval.xp_earned = final_new_xp
         old_eval.coins_earned = final_new_coins
-        old_eval.evaluate_at = datetime.now()  
+        old_eval.evaluate_at = datetime.now()
 
 
         success = await self.mission_repo.update_evaluator(
