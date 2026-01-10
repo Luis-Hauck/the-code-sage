@@ -9,7 +9,6 @@ from src.utils.embeds import MissionEmbeds, create_error_embed, create_info_embe
 
 logger = logging.getLogger(__name__)
 
-dados_thread = {}
 
 # Criamos a classe dos eventos que herda commands.Cog
 class EventsCog(commands.Cog):
