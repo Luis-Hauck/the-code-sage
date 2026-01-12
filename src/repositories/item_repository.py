@@ -1,7 +1,10 @@
 from pymongo.database import Database
 import logging
-from src.database.models.item import ItemModel
 from pymongo.errors import DuplicateKeyError
+from typing import List
+
+from src.database.models.item import ItemModel
+
 
 logger = logging.getLogger(__name__)
 
@@ -103,3 +106,46 @@ class ItemRepository:
         except Exception as e:
             logger.error(f'Erro ao deletar item {item_id}: {e}', exc_info=True)
             return False
+
+    async def get_all(self) -> List[ItemModel]:
+        """
+        Busca todos os itens cadastrados
+        :return: Retorna uma lista com 100 itens cadastrados
+        """
+        try:
+            logger.info(f'Buscando todos os itens cadastrados')
+            result= await self.collection.find({})
+            items_data = await result.to_list(length=100)
+
+            # Converte cada dicionário do Mongo em um objeto ItemModel
+            return [ItemModel(**item) for item in items_data]
+
+        except Exception as e:
+            logger.error(f'Erro ao buscar todos os itens: {e}', exc_info=True)
+            return []
+
+    async def upsert(self, item_model: ItemModel):
+        """
+        Cria ou Atualiza um item (Se o ID já existe, atualiza os dados).
+        :param item_model: Modelo de item a ser criado
+        :return: True se criou com sucesso, False caso contrário
+        """
+        try:
+
+            item_data = item_model.model_dump(by_alias=True)
+
+            # Procura pelo _id. Se achar, substitui. Se não achar, cria.
+            await self.collection.replace_one(
+                {'_id': item_model.item_id},
+                item_data,
+                upsert=True)
+            logger.info(f'Sucesso no upsert do item {item_model.name}!')
+            return True
+
+        except Exception as e:
+            logger.error(f'Erro no upsert do item{item_model.name} item: {e}', exc_info=True)
+            return False
+
+
+
+
