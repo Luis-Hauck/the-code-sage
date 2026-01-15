@@ -146,3 +146,25 @@ class MissionEmbeds:
             color=discord.Color.green()
         )
 
+class ShopEmbeds:
+
+    @staticmethod
+    def create_showcase() -> discord.Embed:
+        """
+       Gera o cabeçalho visual da loja
+        :return: discord.Embed
+        """
+
+        embed = discord.Embed(title='💰 Mercado do Servidor',
+                              description=("**BEM-VINDO À LOJA!**\n\n"
+                                "Aqui você pode gastar suas preciosas moedas.\n"
+                                "**Selecione um item no menu abaixo para ver o preço e comprar.**"
+                            ),
+                            color=discord.Color.from_rgb(46, 204, 113)
+
+        )
+
+
+        embed.set_footer(text='Aproveite as promoções enquanto durarem os estoques!')
+
+        return embed

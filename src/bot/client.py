@@ -11,8 +11,11 @@ from src.repositories.user_repository import UserRepository
 from src.repositories.item_repository import ItemRepository
 from src.repositories.missions_repository import MissionRepository
 from src.repositories.level_rewards_repository import LevelRewardsRepository
+from src.repositories.missions_repository import MissionRepository
+from src.repositories.level_rewards_repository import LevelRewardsRepository
 from src.services.mission_service import MissionService
 from services.leveling_service import LevelingService
+from services.economy_service import EconomyService
 
 
 logger = logging.getLogger(__name__)
@@ -24,9 +27,14 @@ class TheCodeSageBot(commands.Bot):
         super().__init__(command_prefix='/', # Define o comando padrão
                          intents=discord.Intents.all() # Define as intents do bot
                          )
+        self.rewards_repo = None
+        self.mission_repo = None
+        self.item_repo = None
+        self.user_repo = None
         self.db = None
         self.mission_service = None
         self.leveling_service = None
+        self.economy_service = None
 
 
     async def setup_hook(self):
@@ -36,14 +44,15 @@ class TheCodeSageBot(commands.Bot):
         self.db = await connect_to_database()
 
         # Inicializa cada repositório explicitamente
-        user_repo = UserRepository(self.db)
-        item_repo = ItemRepository(self.db)
-        mission_repo = MissionRepository(self.db)
-        rewards_repo = LevelRewardsRepository(self.db)
+        self.user_repo = UserRepository(self.db)
+        self.item_repo = ItemRepository(self.db)
+        self.mission_repo = MissionRepository(self.db)
+        self.rewards_repo = LevelRewardsRepository(self.db)
 
         # inicializa os services
-        self.leveling_service = LevelingService(user_repo, rewards_repo, item_repo)
-        self.mission_service = MissionService(mission_repo, self.leveling_service,user_repo)
+        self.leveling_service = LevelingService(self.user_repo, self.rewards_repo, self.item_repo)
+        self.mission_service = MissionService(self.mission_repo, self.leveling_service,self.user_repo)
+        self.economy_service = EconomyService(self.user_repo, self.item_repo)
 
         logger.info("Services e Repositories inicializados com sucesso!")
 
