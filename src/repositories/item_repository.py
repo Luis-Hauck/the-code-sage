@@ -114,7 +114,7 @@ class ItemRepository:
         """
         try:
             logger.info(f'Buscando todos os itens cadastrados')
-            result= await self.collection.find({})
+            result= self.collection.find({})
             items_data = await result.to_list(length=100)
 
             # Converte cada dicionário do Mongo em um objeto ItemModel
