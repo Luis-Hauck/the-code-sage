@@ -30,4 +30,9 @@ AnyPassiveEffect = Annotated[Union[
     Field(discriminator='type')
 ]
 
-AnyEffect = Union[GiveRoleEffect, AddXpEffect, AddCoinsEffect]
+AnyEffect = Annotated[Union[
+    GiveRoleEffect,
+    AddXpEffect,
+    AddCoinsEffect],
+    Field(discriminator='type')
+]
