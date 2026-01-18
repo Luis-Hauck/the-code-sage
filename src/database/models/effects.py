@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Union
+from typing import Literal, Union, Annotated
 
 
 class AddXpEffect(BaseModel):
@@ -25,5 +25,9 @@ class GiveRoleEffect(BaseModel):
 
 
 # Com Union AnyPassiveEffect e Effect pode receber mais tipos de objeto
-AnyPassiveEffect = Union[CoinBoostPassive, XpBoostPassive]
+AnyPassiveEffect = Annotated[Union[
+    CoinBoostPassive, XpBoostPassive],
+    Field(discriminator='type')
+]
+
 AnyEffect = Union[GiveRoleEffect, AddXpEffect, AddCoinsEffect]
