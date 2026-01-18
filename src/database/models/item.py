@@ -31,7 +31,7 @@ class ItemModel(BaseModel):
     description: str
     price: int
     item_type: ItemType
-    effect: Optional[AnyEffect] = Field(None, discriminator='type')
+    effect: Optional[AnyEffect] = None
     passive_effects: List[AnyPassiveEffect] = []
 
     class Config:

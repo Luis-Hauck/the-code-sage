@@ -146,31 +146,25 @@ class MissionEmbeds:
             color=discord.Color.green()
         )
 
-class InventoryEmbeds:
+class ShopEmbeds:
 
     @staticmethod
-    def view_inventory(user_name: str, equipped_name: str, items_data: list[dict]) -> discord.Embed:
+    def create_showcase() -> discord.Embed:
         """
-        Gera o embed do inventário.
-        :param user_name: Nome do usuário para o título.
-        :param equipped_name: Nome do item já equipado (ou 'Nenhum').
-        :param items_data: Uma lista de dicionários.
-                           Ex: [{'name': 'Espada', 'qty': 1, 'type': 'Equipável', 'description': 'Uma espada de fogo.'}]
+       Gera o cabeçalho visual da loja
+        :return: discord.Embed
         """
 
-        embed = discord.Embed(title='🎒 Inventário',
-                              color=discord.Color.blue()
-        )
-        embed.add_field(name=f'⚔️ Item Equipado de {user_name}',
-                        value=equipped_name,
-                        inline=True
+        embed = discord.Embed(title='💰 Mercado do Servidor',
+                              description=("**BEM-VINDO À LOJA!**\n\n"
+                                "Aqui você pode gastar suas preciosas moedas.\n"
+                                "**Selecione um item no menu abaixo para ver o preço e comprar.**"
+                            ),
+                            color=discord.Color.from_rgb(46, 204, 113)
+
         )
 
-        description_lines = []
-        for item in items_data:
-            line = f"**{item['qty']}x** {item['name']} *({item['type']})* - {item['description']}"
-            description_lines.append(line)
 
-        embed.description = "\n".join(description_lines)
+        embed.set_footer(text='Aproveite as promoções enquanto durarem os estoques!')
 
         return embed

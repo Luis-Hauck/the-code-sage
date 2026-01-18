@@ -85,19 +85,15 @@ class EconomyService:
 
         return True, "Item equipado com sucesso!"
 
-    async def unequip_item(self,user_id: int, item_id: int) -> Tuple[bool, str]:
+    async def unequip_item(self,user_id: int) -> Tuple[bool, str]:
         """
         Desequipa um item equipado
         :param user_id: ID do usuário para equipar o item;
-        :param item_id: ID do item a ser equipado;
         :return: (True/False, Mensagem).
         """
         user = await self.user_repo.get_by_id(user_id)
         if not user:
-            return False, f"Usuário não encontrado."
-
-        if user.equipped_item_id !=  item_id :
-            return False, f'Você não possuí item equipado.'
+            return False, f"Usuário não encontrado para desequipar o item."
 
         await self.user_repo.unequip_item(user_id)
         return True, "Item desequipado com sucesso!"

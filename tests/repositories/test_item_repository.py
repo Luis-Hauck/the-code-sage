@@ -121,3 +121,72 @@ async def test_delete_item_not_found(mock_db):
     result = await item_repo.delete(item_id=999)
 
     assert result is False
+
+
+async def test_get_all_success(mock_db, sample_item):
+    """Testa se get_all retorna uma lista de todos os itens."""
+
+    mock_cursor = AsyncMock()
+    # Simulamos que o banco retornou uma lista com 1 item
+    mock_cursor.to_list.return_value = [sample_item.model_dump(by_alias=True)]
+
+    # Quando chamarem find(), retorna esse cursor configurado
+    mock_db.items.find.return_value = mock_cursor
+
+    item_repo = ItemRepository(db=mock_db)
+    result = await item_repo.get_all()
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], ItemModel)
+    assert result[0].item_id == sample_item.item_id
+
+    # Verifica se chamou find({}) sem filtros
+    mock_db.items.find.assert_called_with({})
+
+
+async def test_get_all_empty(mock_db):
+    """Testa se get_all lida bem com banco vazio."""
+
+    mock_cursor = AsyncMock()
+    mock_cursor.to_list.return_value = []  # Lista vazia
+    mock_db.items.find.return_value = mock_cursor
+
+    item_repo = ItemRepository(db=mock_db)
+    result = await item_repo.get_all()
+
+    assert result == []
+
+
+async def test_upsert_success(mock_db, sample_item):
+    """Testa se o upsert chama replace_one corretamente."""
+
+    # Mock do replace_one
+    mock_db.items.replace_one = AsyncMock()
+
+    item_repo = ItemRepository(db=mock_db)
+    result = await item_repo.upsert(sample_item)
+
+    assert result is True
+
+    # Verifica se os argumentos cruciais foram passados:
+    # Filtro pelo ID
+    # Dados do item
+    # upsert=True
+    mock_db.items.replace_one.assert_awaited_with(
+        {"_id": sample_item.item_id},
+        sample_item.model_dump(by_alias=True),
+        upsert=True
+    )
+
+
+async def test_upsert_failure(mock_db, sample_item):
+    """Testa o tratamento de erro no upsert."""
+
+    # Simula um erro de banco de dados
+    mock_db.items.replace_one.side_effect = Exception("Connection Error")
+
+    item_repo = ItemRepository(db=mock_db)
+    result = await item_repo.upsert(sample_item)
+
+    assert result is False

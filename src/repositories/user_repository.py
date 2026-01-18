@@ -73,7 +73,7 @@ class UserRepository:
             logger.error(f'Falha ao atualizar os status do user {user_id}: {e}')
             return False
 
-    async def add_xp_coins(self, user_id:int, xp:float, coins:float) -> Optional[UserModel]:
+    async def add_xp_coins(self, user_id:int, xp:int, coins:int) -> Optional[UserModel]:
         """
         Adicona XP e moedas ao usuário pelo ID.
 
