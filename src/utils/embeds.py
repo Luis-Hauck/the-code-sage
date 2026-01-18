@@ -168,3 +168,32 @@ class ShopEmbeds:
         embed.set_footer(text='Aproveite as promoções enquanto durarem os estoques!')
 
         return embed
+
+class InventoryEmbeds:
+
+    @staticmethod
+    def view_inventory(user_name: str, equipped_name: str, items_data: list[dict]) -> discord.Embed:
+        """
+        Gera o embed do inventário.
+        :param user_name: Nome do usuário para o título.
+        :param equipped_name: Nome do item já equipado (ou 'Nenhum').
+        :param items_data: Uma lista de dicionários.
+                           Ex: [{'name': 'Espada', 'qty': 1, 'type': 'Equipável', 'description': 'Uma espada de fogo.'}]
+        """
+
+        embed = discord.Embed(title=f'🎒 Inventário do {user_name}',
+                              color=discord.Color.blue()
+        )
+        embed.add_field(name=f'⚔️ Item Equipado por {user_name}',
+                        value=equipped_name,
+                        inline=True
+        )
+
+        description_lines = []
+        for item in items_data:
+            line = f"**{item['qty']}x** **{item['name']}** - *({item['type']})*: *{item['description']}*"
+            description_lines.append(line)
+
+        embed.description = "\n".join(description_lines)
+
+        return embed
