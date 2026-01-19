@@ -94,7 +94,7 @@ class LevelingService:
                 role_obj = guild.get_role(target_role_id) # verifcamos se esse cargo existe no servidor
                 if role_obj:
                     await  member.add_roles(role_obj)
-                    logger.info(f'Cargo {target_reward.role_name} adcionado ao usuário {member.dysplay_name}')
+                    logger.info(f'Cargo {target_reward.role_name} adcionado ao usuário {member.display_name}')
 
                 else:
                     logger.warning(f"Cargo ID {target_role_id} não encontrado no Discord!")
