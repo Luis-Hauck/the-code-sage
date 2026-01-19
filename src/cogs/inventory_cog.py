@@ -76,9 +76,10 @@ class InventoryCog(commands.Cog):
             return
 
         # Verificamos se tem um item equipado
+        equipped_item_name = "Nenhum item equipado"
         if user_data.equipped_item_id:
             equipped_item = await self.economy_service.item_repo.get_by_id(user_data.equipped_item_id)
-            equipped_item_name = equipped_item.name if equipped_item else 'Você não tem nenhum item equipado'
+            equipped_item_name = equipped_item.name
 
 
         items_for_display = []
@@ -88,7 +89,7 @@ class InventoryCog(commands.Cog):
             items_for_display.append({
                 'name': item.name,
                 'qty': quantity,
-                'type': item.item_type,
+                'type': item.item_type.value,
                 'description': item.description
             })
 
