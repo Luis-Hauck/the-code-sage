@@ -111,14 +111,13 @@ class LevelingService:
 
         if user and user.equipped_item_id:
             item = await self.item_repo.get_by_id(user.equipped_item_id)
-
             # Verifica se o item existe e tem efeitos passivos
             if item and item.passive_effects:
                 for effect in item.passive_effects:
                     if effect.type == "xp_boost":
                         xp_multiplier += effect.multiplier
 
-                    elif effect.type == "coins_boost":
+                    elif effect.type == "coin_boost":
                         coins_multiplier += effect.multiplier
 
         # Calcula XP final
