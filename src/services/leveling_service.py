@@ -48,6 +48,45 @@ class LevelingService:
 
         return self.BASE_XP_FACTOR * (next_level ** 2)
 
+    def get_user_progress(self, total_xp: int) -> dict:
+        """
+        Calcula os dados detalhados de progresso para exibição (Barras, Porcentagens).
+
+        Realiza a matemática de "Piso" e "Teto" para determinar o progresso
+        relativo dentro do nível atual.
+
+        :param total_xp: XP total acumulado do usuário.
+        :return: Dicionário contendo:
+            - current_level (int): Nível atual do usuário
+            - relative_xp (int): XP conquistado neste nível (ex: 50)
+            - needed_xp (int): Tamanho total deste nível (ex: 450)
+            - percentage (int): Porcentagem concluída (0-100)
+            - xp_floor (int): XP onde este nível começou
+            - xp_ceiling (int): XP onde este nível termina
+        """
+        current_level = self.calculate_level(total_xp)
+
+        # Teto de XP do nível atual
+        xp_ceiling = self.xp_for_next_level(current_level)
+
+        # Piso (Fórmula inversa baseada no nível atual)
+        xp_floor = self.BASE_XP_FACTOR * (current_level ** 2)
+
+        # Calculos de progresso
+        xp_needed = xp_ceiling - xp_floor
+        xp_progress = total_xp - xp_floor
+
+        percentage = int((xp_progress / xp_needed) * 100)
+
+        return {
+            "current_level": current_level,
+            "relative_xp": xp_progress,
+            "needed_xp": xp_needed,
+            "percentage": percentage,
+            "xp_floor": xp_floor,
+            "xp_ceiling": xp_ceiling
+        }
+
     async def sync_roles(self, user_id:int, current_level:int, guild):
         """
         Verica o cargo atual de nível e adciona ao usuário além de remover qualquer outro de nível antigo.
