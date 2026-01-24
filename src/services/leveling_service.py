@@ -48,17 +48,17 @@ class LevelingService:
 
         return self.BASE_XP_FACTOR * (next_level ** 2)
 
-    async def sync_roles(self, user_id, nivel_atual, guild):
+    async def sync_roles(self, user_id:int, current_level:int, guild):
         """
         Verica o cargo atual de nível e adciona ao usuário além de remover qualquer outro de nível antigo.
         :param guild: Servidor do discord em que estamos.
         :param user_id: ID do usuário.
-        :param nivel_atual: Nível atual do usário
+        :param current_level: Nível atual do usário
         :return: True caso o cargo atual tenha sido alterado, senão False.
         """
 
         # Cargo alvo
-        target_reward = await self.rewards_repo.get_role_for_level(nivel_atual)
+        target_reward = await self.rewards_repo.get_role_for_level(current_level)
 
         # Lista de cargos
         all_rewards_ids = await self.rewards_repo.get_all_reward_role_ids()
@@ -162,7 +162,7 @@ class LevelingService:
         # se ele não existir paramos aqui
         if not updated_user:
             logger.warning(f'Não foi possivel localizar o user {user_id}')
-            return
+            return False, None
 
         # Verificamos o nível atual
         current_level = self.calculate_level(updated_user.xp)
