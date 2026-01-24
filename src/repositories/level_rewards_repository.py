@@ -42,9 +42,9 @@ class LevelRewardsRepository:
         Retorna uma lista com APENAS os IDs de todos os cargos de recompensa.
         """
         try:
-            cursor = await self.collection.find(
+            cursor = self.collection.find(
                 {},
-                {'role_id':1, 'id': 0}
+                {'role_id':1, '_id': 0}
 
 
             )
