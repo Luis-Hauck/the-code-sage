@@ -50,11 +50,11 @@ class LevelingService:
 
     async def sync_roles(self, user_id, nivel_atual, guild):
         """
-        Verica o cargo atual remove qualquer outro de nível antigo.
+        Verica o cargo atual de nível e adciona ao usuário além de remover qualquer outro de nível antigo.
         :param guild: Servidor do discord em que estamos.
         :param user_id: ID do usuário.
         :param nivel_atual: Nível atual do usário
-        :return:
+        :return: True caso o cargo atual tenha sido alterado, senão False.
         """
 
         # Cargo alvo
@@ -68,37 +68,49 @@ class LevelingService:
 
         if not member:
             logger.info(f'Não foi possível localizar o usuário {user_id}.')
-            return
+            return False
 
         roles_to_remove = []
 
         target_role_id = target_reward.role_id if target_reward else None
+        has_target_role = False
 
         # verificamos cada role do membro, se ele tiver roles de nível diferente do dele colocamos na lista para remover.
         for role in member.roles:
+
+            if role.id == target_role_id:
+                has_target_role = True
+                continue
+
             if role.id in all_rewards_ids:
                 if role.id != target_role_id:
                     roles_to_remove.append(role)
 
+        # Váriavel para verificar se mudamos algum cargo de nível
+        new_role_added = False
 
         # Removemos as roles que não competem ao nível atual
         if roles_to_remove:
-            await member.remove_roles(*roles_to_remove)
-            logger.info(f'Foram removidos {len(roles_to_remove)} cargos antigos de {member.name}')
+            try:
+                await member.remove_roles(*roles_to_remove)
+                logger.info(f'Foram removidos {len(roles_to_remove)} cargos antigos de {member.name}')
+            except Exception as e:
+                logger.error(f'Erro ao remover cargos antigos: {e}')
 
-        if target_reward:
-            # verificamos se já não tem o cargo
-            has_role = any(r.id == target_role_id for r in member.roles)
+        # Se ele não tiver o cargo para o nível atual adicionamos ele
+        if target_role_id and not has_target_role:
+            role_obj = guild.get_role(target_role_id)
+            if role_obj:
+                try:
+                    await member.add_roles(role_obj)
+                    logger.info(f'Cargo {target_reward.role_name} adicionado para {member.display_name}')
+                    new_role_added = True  # Confirmamos que houve adição de cargo novo
+                except Exception as e:
+                    logger.error(f"Erro ao adicionar: {e}")
+            else:
+                logger.warning(f"Cargo ID {target_role_id} não encontrado!")
 
-            if not has_role:
-                role_obj = guild.get_role(target_role_id) # verifcamos se esse cargo existe no servidor
-                if role_obj:
-                    await  member.add_roles(role_obj)
-                    logger.info(f'Cargo {target_reward.role_name} adcionado ao usuário {member.display_name}')
-
-                else:
-                    logger.warning(f"Cargo ID {target_role_id} não encontrado no Discord!")
-
+        return new_role_added
 
     async def calculate_bonus(self, user: UserModel, base_xp: int, base_coins) -> Tuple[int, int, str]:
         """
@@ -152,18 +164,25 @@ class LevelingService:
             logger.warning(f'Não foi possivel localizar o user {user_id}')
             return
 
-        # verificamos a qtd anterior de xp
+        # Verificamos o nível atual
+        current_level = self.calculate_level(updated_user.xp)
+
+        # Calculamos o nível antigo
         old_xp = max(0, updated_user.xp - xp_amount)
-
-        # calculamos o nível aintigo e o atual
         old_level = self.calculate_level(old_xp)
-        new_level = self.calculate_level(updated_user.xp)
 
-        # Se o novo nível for maior que o antigo subimos ele e damos um novo cargo
-        if new_level > old_level:
-            logger.info(f'Level UP! {user_id}: {old_level} -> {new_level}')
-            await self.sync_roles(user_id, new_level, guild)
+        try:
+            level_up_occurred = await self.sync_roles(user_id, current_level, guild)
 
+            if level_up_occurred:
+                logger.info(f'Level UP! {user_id}: {old_level} -> {current_level}')
+                return True, current_level
+            else:
+                return False, None
+
+        except Exception as e:
+            logger.info(f'Erro ao sincronizar os cargos: {e}')
+            return False, None
 
 
 
