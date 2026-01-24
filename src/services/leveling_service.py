@@ -178,7 +178,7 @@ class LevelingService:
                 logger.info(f'Level UP! {user_id}: {old_level} -> {current_level}')
                 return True, current_level
             else:
-                return False, None
+                return False, current_level
 
         except Exception as e:
             logger.info(f'Erro ao sincronizar os cargos: {e}')
