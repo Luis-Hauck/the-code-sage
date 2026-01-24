@@ -102,13 +102,12 @@ class MissionService:
 
 
         # Entrega as recompensas
-        await self.leveling_service.grant_reward(user_id,
+        result, current_level = await self.leveling_service.grant_reward(user_id,
                                                  final_xp,
                                                  final_coins,
                                                  guild)
-
-        # Nível após a missão
-        current_level = int(self.leveling_service.calculate_level(user.xp+final_xp))
+        if current_level is None:
+            return False, 'Erro ao entregar recompensas.'
 
         # Cria a nova pessoa avaliada
         new_evaluator = EvaluatorModel(
