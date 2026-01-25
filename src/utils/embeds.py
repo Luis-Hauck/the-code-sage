@@ -197,3 +197,32 @@ class InventoryEmbeds:
         embed.description = "\n".join(description_lines)
 
         return embed
+
+class UserEmbeds:
+
+    @staticmethod
+    def view_profile(user_name:str, current_level:int, current_xp:int, xp_next_level:int, progress_percent: int,coin_balance:int, equipped_item_name:str) -> discord.Embed:
+        """
+        Gera o embed do perfil do usuário
+        :param current_level: Nivel atual do usuário;
+        :param user_name: Nome do usuário;
+        :param current_xp: XP do usuário
+        :param xp_next_level: XP par ao próximo nível do usuário
+        :param progress_percent: Progresso(%) par ao próximo nível.
+        :param coin_balance: Moedas em caixa.
+        :param equipped_item_name: Nome do item equipado
+        :return: discord.Embed
+        """
+
+        filled = int(progress_percent / 10)
+        bar = "🟦" * filled + "⬜" * (10 - filled)
+
+        embed = discord.Embed(title=f"🛡️ Perfil de {user_name}")
+        embed.add_field(name="Progresso", value=f"{bar} **{progress_percent}%****\n`{current_xp} / {xp_next_level} XP`", inline=False)
+        embed.add_field(name="Nível", value=f"🏆 **{current_level}**", inline=True)
+        embed.add_field(name="Saldo", value=f"💰 **{coin_balance}**", inline=True)
+        if equipped_item_name != "Nenhum item equipado":
+            embed.add_field(name="Item equipado", value=f'⚔️ **{equipped_item_name}**', inline=False)
+
+
+        return embed
