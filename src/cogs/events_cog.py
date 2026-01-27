@@ -7,7 +7,8 @@ from datetime import datetime
 from services.sage_service import SageService
 from src.app.config import MISSION_CHANNEL_ID
 from src.database.models.user import UserModel, UserStatus
-from src.utils.embeds import MissionEmbeds
+from src.utils.embeds import MissionEmbeds, CodeSageEmbeds
+from src.views.youtube_view import YoutubeView
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,7 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f'Abra-kadabra 001001')
-        logger.info(f'Abra-kadabra 001001')
+        logger.info(f'Bot Ligado!')
 
     @commands.Cog.listener()
     async def on_member_join(self, member:discord.Member):
@@ -49,11 +49,25 @@ class EventsCog(commands.Cog):
             exists = await user_repo.get_by_id(member.id)
             if not exists:
                 await user_repo.create(user)
-                await member.send(f'Olá seja bem-vindo ao servidor {member.name}')
+                welcome_embed = CodeSageEmbeds.welcome_message(member=member)
+                await member.send(embed=welcome_embed,
+                                  view=YoutubeView())
             else:
-                # Se o usuário já esxistia só atualiza o status para ativo
+                # Se o usuário já existia só atualiza o status para ativo
                 await user_repo.update_status(member.id, UserStatus.ACTIVE)
-                await member.send(f'Olá seja bem-vindo novamente {member.nick}')
+                welcome_back_embed = CodeSageEmbeds.welcome_back_message(member=member)
+                await member.send(embed=welcome_back_embed,
+                                  view=YoutubeView())
+
+                # Adiciona os cargos antigos do servidor
+                for role_id in exists.role_ids:
+                    role_obj = member.guild.get_role(role_id)
+
+                    if role_obj:
+                        try:
+                            await member.add_roles(role_obj, reason="Restaurando cargos antigos")
+                        except discord.Forbidden:
+                            print(f"Sem permissão para dar o cargo {role_id}")
 
         except Exception as e:
             logger.warning(f'Não foi possível registrar ou atualizar o usuário {member.id}: {e}', exc_info=True)
@@ -120,9 +134,15 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member:discord.Member):
-        """Logica de inativar o usuário que saiu do servidor"""
+        # Logica de inativar o usuário que saiu do servidor
         user_repo = self.bot.mission_service.user_repo
         await user_repo.update_status(member.id, UserStatus.INACTIVE)
+
+        # Salvamos os cargos atuais caso o usário volte
+        for role in member.roles:
+            if not role.is_default() and not role.is_bot_managed():
+                await user_repo.add_role(member.id, role.id)
+                logger.info(f'{member.name} Saiu do servidor e guardamos os seus cargos')
 
 
 

@@ -226,3 +226,96 @@ class UserEmbeds:
 
 
         return embed
+
+class CodeSageEmbeds:
+
+    @staticmethod
+    def welcome_message(member:discord.Member) -> discord.Embed:
+        """
+        Mensagem de boas-vindas ao entrar no servidor.
+        :param member: discord.Member
+        :return: discord.Embed
+        """
+        link_repo = 'https://github.com/Luis-Hauck/the-code-sage'
+
+        embed = discord.Embed(title=f'🔥 Uma nova chama se acende na Code Cave!',
+                              description=(f'Seja muito bem-vindo,{member.mention} ao servidor!\n'
+                                          f'>Eu sou o **Code Sage**, o grande sábio deste servidor\n\n'
+                                          f'**Além disso você sabia que eu sou um projeto Open Source?**'
+                                          f'Você pode contribuir visitando o **[repositório do meu criador]({link_repo})**'
+                                ),
+                              color=discord.Color.blue()
+
+                              )
+
+        embed.set_thumbnail(url=member.display_avatar.url)
+
+        embed.add_field(
+            name="🧭 Primeiros Passos",
+            value="• Leia as **[regras](#)**\n• Escolha seus **[Cargos](#)**\n• Apresente-se no **[Chat Geral](#)**",
+            inline=True
+        )
+
+
+        embed.add_field(
+            name="📺 O que você encontra no Eitech?",
+            value=(
+                "🚀 **Python & Automação**\n"
+                "🧪 **Data Science e IA**\n"
+                "🛠️ **Projetos Práticos (como este bot!)**\n"
+                "🗣️ **Bate papo ao vivo**"
+                f"*Clique no botão para conhecer!*"
+            ),
+            inline=False
+        )
+
+        embed.set_footer(
+            text=f"Você é o membro nº {len(member.guild.members)} desta jornada.")
+
+
+        return embed
+
+    @staticmethod
+    def welcome_back_message(member: discord.Member) -> discord.Embed:
+        """
+        Mensagem para usuários que já participaram e retornaram (Recuperação de dados).
+        :param member: discord.Member
+        :return: discord.Embed
+        """
+        link_repo = 'https://github.com/Luis-Hauck/the-code-sage'
+
+        embed = discord.Embed(
+            title=f'🔄 O eco dos seus passos retorna à Code Cave!',
+            description=(
+                f'Bem-vindo de volta, {member.mention}!\n'
+                f'> **O Code Sage guardou o seu lugar junto à fogueira.**\n\n'
+                f'🧙‍♂️ *Conjurei um feitiço de memória:*\n'
+                f'Seus **Cargos**, **XP** e **Itens** antigos foram restaurados com sucesso.\n\n'
+                f'Enquanto você esteve fora, continuamos evoluindo! '
+                f'Confira as novidades no **[repositório oficial]({link_repo})**.'
+            ),
+            color=discord.Color.green()
+        )
+
+        embed.set_thumbnail(url=member.display_avatar.url)
+
+
+        embed.add_field(
+            name="📺 Enquanto você estava fora...",
+            value=(
+                "O canal **Eitech** continuou produzindo:\n"
+                "🚀 **Python & Automação**\n"
+                "🧪 **Data Science e IA**\n"
+                "🛠️ **Novos Projetos Práticos**\n"
+                f"*Clique no botão abaixo para se atualizar!*"
+            ),
+            inline=False
+        )
+
+        embed.set_footer(
+            text=f"A comunidade agora conta com {len(member.guild.members)} viajantes."
+        )
+
+        return embed
+
+
