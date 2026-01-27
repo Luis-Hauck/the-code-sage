@@ -11,11 +11,10 @@ from src.repositories.user_repository import UserRepository
 from src.repositories.item_repository import ItemRepository
 from src.repositories.missions_repository import MissionRepository
 from src.repositories.level_rewards_repository import LevelRewardsRepository
-from src.repositories.missions_repository import MissionRepository
-from src.repositories.level_rewards_repository import LevelRewardsRepository
 from src.services.mission_service import MissionService
 from services.leveling_service import LevelingService
 from services.economy_service import EconomyService
+from src.services.sage_service import SageService
 
 
 logger = logging.getLogger(__name__)
@@ -35,6 +34,7 @@ class TheCodeSageBot(commands.Bot):
         self.mission_service = None
         self.leveling_service = None
         self.economy_service = None
+        self.sage_service = None
 
 
     async def setup_hook(self):
@@ -53,6 +53,7 @@ class TheCodeSageBot(commands.Bot):
         self.leveling_service = LevelingService(self.user_repo, self.rewards_repo, self.item_repo)
         self.mission_service = MissionService(self.mission_repo, self.leveling_service,self.user_repo)
         self.economy_service = EconomyService(self.user_repo, self.item_repo)
+        self.sage_service = SageService()
 
         logger.info("Services e Repositories inicializados com sucesso!")
 

@@ -1,11 +1,13 @@
+import asyncio
 import logging
 from discord.ext import commands
 import discord
 from datetime import datetime
 
+from services.sage_service import SageService
 from src.app.config import MISSION_CHANNEL_ID
 from src.database.models.user import UserModel, UserStatus
-from src.utils.embeds import MissionEmbeds, create_error_embed, create_info_embed
+from src.utils.embeds import MissionEmbeds
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,7 @@ class EventsCog(commands.Cog):
     # Recebe o bot para interagirmos com ele
     def __init__(self, bot:commands.Bot):
         self.bot = bot
+        self.sage_service: SageService = bot.sage_service
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -60,12 +63,32 @@ class EventsCog(commands.Cog):
     async def on_thread_create(self, thread:discord.Thread):
         # Lógica de criar uma sessão com os dados do criar e a quantidade de pessoas avaliadas
         if thread.parent_id == MISSION_CHANNEL_ID:
+            description = ''
 
             # Tentamos pegar o conteúdo da mensagem inicial
             try:
+                # Aguardamos um pouco para que a mensagem seja criada
+                await asyncio.sleep(1)
 
                 starter_message = await thread.fetch_message(thread.id)
                 description = starter_message.content
+
+                # Se não estiver no cache busca no histórico
+                if not starter_message:
+                    async for message in thread.history(limit=1, oldest_first=True):
+                        starter_message = message
+                        break
+                # Se encontrou a mensagem extrai texto e imagem
+                if starter_message:
+                    if starter_message.content:
+                        description = starter_message.content
+
+                # Verifica se tem anexos e se o primeiro é uma imagem
+                if starter_message.attachments:
+                    first_attachment = starter_message.attachments[0]
+                    if first_attachment.content_type and first_attachment.content_type.startswith('image/'):
+                        image_bytes = await first_attachment.read()
+
             except Exception as e:
                 logger.warning(f'Não foi possível pegar a mensagem da missão com id {thread.id}: {e}')
 
@@ -80,7 +103,12 @@ class EventsCog(commands.Cog):
                 )
 
                 if sucess:
-                    embeb = MissionEmbeds.mission_start(riddle_text=description)
+                    riddle_text = await self.sage_service.generate_riddle(
+                        title=thread.name,
+                        description=description,
+                        image_bytes=image_bytes
+                    )
+                    embeb = MissionEmbeds.mission_start(riddle_text=riddle_text)
                     await thread.send(embed=embeb)
                     logger.info(f'Missão {thread.id} registrada no banco.')
                 else:
