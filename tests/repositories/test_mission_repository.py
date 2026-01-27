@@ -29,7 +29,6 @@ def sample_mission() -> MissionModel:
                                                     username= 'Luis',
                                                     user_level_at_time= 5,
                                                     rank=EvaluationRank.A,
-                                                    score=EvaluationRank.A.score,
                                                     xp_earned= 5,
                                                     coins_earned = 0
                                                    )
