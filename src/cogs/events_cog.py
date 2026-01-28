@@ -5,6 +5,7 @@ import discord
 from datetime import datetime
 
 from services.sage_service import SageService
+from services.mission_service import MissionService
 from src.app.config import MISSION_CHANNEL_ID
 from src.database.models.user import UserModel, UserStatus
 from src.utils.embeds import MissionEmbeds, CodeSageEmbeds
@@ -15,10 +16,17 @@ logger = logging.getLogger(__name__)
 
 # Criamos a classe dos eventos que herda commands.Cog
 class EventsCog(commands.Cog):
+    """Eventos globais do servidor (entradas, saídas e threads)."""
     # Recebe o bot para interagirmos com ele
     def __init__(self, bot:commands.Bot):
+        """Inicializa o Cog de eventos.
+
+        Args:
+            bot (commands.Bot): Instância principal do bot.
+        """
         self.bot = bot
         self.sage_service: SageService = bot.sage_service
+        self.mission_service: MissionService = bot.mission_service
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -26,13 +34,14 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member:discord.Member):
-        """
-        Registra um novo membro no servidor,e se for alguém que retornou ativa ele.
-        :param member: Objeto do membro que entrou.
-        :return:
+        """Registra um novo membro no servidor ou reativa quem retornou.
+        Insere novos membros no banco de dados e envia um embed de boas-vindas.
+
+        Args:
+            member (discord.Member): Membro que entrou no servidor.
         """
         try:
-            user_repo = self.bot.mission_service.user_repo
+            user_repo = self.mission_service.user_repo
 
             user = UserModel(_id=member.id,
                              username=member.name,
@@ -75,6 +84,12 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_thread_create(self, thread:discord.Thread):
+        """
+        Evento que capta uma nova thread criada no servidor e registra no banco.
+        Além de enviar uma embed na thread.
+        Args:
+            thread (discord.Thread): Representa uma thread criada no servidor.
+        """
         # Lógica de criar uma sessão com os dados do criar e a quantidade de pessoas avaliadas
         if thread.parent_id == MISSION_CHANNEL_ID:
             description = ''
@@ -106,7 +121,7 @@ class EventsCog(commands.Cog):
             except Exception as e:
                 logger.warning(f'Não foi possível pegar a mensagem da missão com id {thread.id}: {e}')
 
-            service = self.bot.mission_service
+            service = self.mission_service
             author_id = thread.owner_id
 
             if author_id:
@@ -134,8 +149,14 @@ class EventsCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member:discord.Member):
+        """
+        Evento que captura quando um membro sai do servidor.
+        Atualiza seu status no banco de dados e adciona os cargos antigos.
+        Args:
+            member (discord.Member): Membro que saiu do servidor.
+        """
         # Logica de inativar o usuário que saiu do servidor
-        user_repo = self.bot.mission_service.user_repo
+        user_repo = self.mission_service.user_repo
         await user_repo.update_status(member.id, UserStatus.INACTIVE)
 
         # Salvamos os cargos atuais caso o usário volte

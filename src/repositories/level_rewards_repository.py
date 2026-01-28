@@ -15,20 +15,22 @@ class LevelRewardsRepository:
         self.collection = db.level_rewards
 
     async def get_role_for_level(self, current_level: int) -> Optional[LevelRewardsModel]:
-        """
-        Busca a maior recompensa aplicável para o nível atual.
-        Retorna o Modelo se encontrar, ou None.
-        :param current_level: Nível atual.
-        :return:Retorna o Modelo se encontrar, ou None.
+        """Busca a maior recompensa aplicável para o nível atual.
+
+        Args:
+            current_level (int): Nível atual.
+
+        Returns:
+            Optional[LevelRewardsModel]: O modelo encontrado ou None se não houver recompensa aplicável.
         """
         try:
-            result =  await self.collection.find_one(
+            result = await self.collection.find_one(
                 {'level_required': {'$lte': current_level}},
                 sort=[('level_required', -1)]
             )
 
             if result:
-                logger.info(f'Nível atual: {current_level}, Maior recompensa {result['role_name']}')
+                logger.info(f"Nível atual: {current_level}, Maior recompensa {result['role_name']}")
                 return LevelRewardsModel(**result)
 
             logger.warning(f'Não foi possível identificar o modelo para o nível {current_level}.')
@@ -38,13 +40,15 @@ class LevelRewardsRepository:
             logger.error(f'Erro ao buscar recompensa de nível: {e}', exc_info=True)
 
     async def get_all_reward_role_ids(self) -> List[int]:
-        """
-        Retorna uma lista com APENAS os IDs de todos os cargos de recompensa.
+        """Obtém apenas os IDs de todos os cargos de recompensa.
+
+        Returns:
+            List[int]: Lista contendo somente os role IDs de recompensa.
         """
         try:
             cursor = self.collection.find(
                 {},
-                {'role_id':1, '_id': 0}
+                {'role_id': 1, '_id': 0}
 
 
             )
@@ -60,6 +64,11 @@ class LevelRewardsRepository:
     async def create(self, reward_model: LevelRewardsModel) -> bool:
         """
         Cria uma nova regra de recompensa (Para Admin/Seed).
+
+        Args:
+            reward_model (LevelRewardsModel): Modelo da regra de recompensa a ser criada.
+        Returns:
+            bool: True caso tenha criado, False caso contrário
         """
         try:
             data = reward_model.model_dump(by_alias=True, exclude_none=True)

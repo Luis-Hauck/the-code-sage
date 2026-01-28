@@ -10,9 +10,19 @@ logger = logging.getLogger(__name__)
 
 class UserRepository:
     """
-    Repositório de operações com a coleção de usuários.
+    Repositório responsável por operações na coleção de usuários.
+
+    Este repositório encapsula as interações com o banco de dados relacionadas
+    a usuários, oferecendo métodos para criação, consulta, atualização de
+    status, manipulação de inventário e gerenciamento de cargos (roles).
     """
     def __init__(self, db: Database):
+        """
+        Inicializa o repositório com a instância do banco de dados.
+
+        Args:
+            db (Database): Instância do banco de dados MongoDB.
+        """
         # Conexão com a coleção User
         self.collection = db.users
 
@@ -21,10 +31,10 @@ class UserRepository:
         Cria um novo usuário no banco de dados.
 
         Args:
-            user_model: Modelo do usuário a ser criado
+            user_model (UserModel): Modelo do usuário a ser criado.
 
         Returns:
-            bool: True se criou com sucesso, False caso contrário
+            bool: True se criou com sucesso; False caso contrário.
         """
 
         try:
@@ -49,11 +59,11 @@ class UserRepository:
         Atualiza o status de um usuário.
 
         Args:
-            user_id: ID do usuário
-            status: Novo status (ACTIVE, INACTIVE, BANNED, MUTED)
+            user_id (int): ID do usuário.
+            status (UserStatus): Novo status (ACTIVE, INACTIVE, BANNED, MUTED).
 
         Returns:
-            bool: True se atualizou com sucesso, False caso contrário
+            bool: True se atualizou com sucesso; False caso contrário.
         """
 
         try:
@@ -75,16 +85,16 @@ class UserRepository:
 
     async def add_xp_coins(self, user_id:int, xp:int, coins:int) -> Optional[UserModel]:
         """
-        Adicona XP e moedas ao usuário pelo ID.
+        Adiciona XP e moedas ao usuário pelo ID.
 
         Args:
             user_id: ID do usuário
             xp: Valor de XP a ser adicionado
             coins: Valor de moedas a ser adicionado
         Returns:
-            bool: Retorna um objeto UserModel do usuário atualizado.
+            Optional[UserModel]: O usuário atualizado se encontrado; None se o usuário não existir ou em caso de erro.
         """
-        # Se o xp e moedas forem 0 retornamos o UserModel pelo ID.
+        # Se xp e moedas forem 0, apenas retorna o UserModel pelo ID.
         if not xp and not coins:
             return await self.get_by_id(user_id)
         try:
@@ -110,15 +120,14 @@ class UserRepository:
             logger.error(f'Falha ao incremenatar xp e moedas ao user {user_id}: {e}')
             return None
 
-    async def get_by_id(self, user_id:int):
+    async def get_by_id(self, user_id:int) -> Optional[UserModel]:
         """
-        Busca um um usuário pelo id
+        Busca um usuário pelo ID.
 
         Args:
-        user_id: ID do usuário a ser buscado
+            user_id (int): ID do usuário a ser buscado.
         Returns:
-
-        UserModel se encontrado, None se não encontrado ou em caso de erro
+            Optional[UserModel]: O usuário encontrado; None se não encontrado ou em caso de erro.
         """
         try:
             user_data = await self.collection.find_one({'_id': user_id})
@@ -135,12 +144,13 @@ class UserRepository:
     async def equip_item(self, user_id: int, item_id: int) -> bool:
         """
         Equipa um item no usuário.
+
         Args:
-            user_id: ID do usuário
-            item_id: ID do item a ser equipado
+            user_id (int): ID do usuário.
+            item_id (int): ID do item a ser equipado.
         Returns:
-            bool: True se ocorreu sucesso na operação,
-                  False caso contrário.
+            bool: True se a operação foi concluída (inclusive se o item já estava equipado);
+                  False se o usuário não existir ou não possuir o item.
         """
 
         try:
@@ -174,12 +184,13 @@ class UserRepository:
 
     async def unequip_item(self, user_id: int) -> bool:
         """
-        Remove o item equipado do usuário.
+        Remove o item atualmente equipado do usuário.
 
         Args:
-            user_id: ID do usuário
+            user_id (int): ID do usuário.
         Returns:
-            bool: True se a operação foi bem-sucedida. False em caso de erro.
+            bool: True se a operação foi processada (inclusive se já não havia item equipado);
+                  False se o usuário não existir ou ocorrer erro.
         """
 
         try:
@@ -212,12 +223,12 @@ class UserRepository:
         Adiciona item(s) ao inventário do usuário.
 
         Args:
-            user_id: ID do usuário
-            item_id: ID do item a ser adicionado
-            quantity: Quantidade a adicionar (deve ser positivo)
+            user_id (int): ID do usuário.
+            item_id (int | str): ID do item a ser adicionado.
+            quantity (int): Quantidade a adicionar (deve ser positiva). Se 0, nada é feito.
 
         Returns:
-            bool: True se a operação foi bem-sucedida ou se a quantidade era zero. False em caso de erro.
+            bool: True se a operação foi bem-sucedida ou se a quantidade era zero; False em caso de erro.
         """
         if not quantity:
             return True
@@ -249,12 +260,12 @@ class UserRepository:
         Remove item(s) do inventário do usuário.
 
         Args:
-            user_id: ID do usuário
-            item_id: ID do item a ser removido
-            quantity: Quantidade a remover (deve ser positivo)
+            user_id (int): ID do usuário.
+            item_id (int | str): ID do item a ser removido.
+            quantity (int): Quantidade a remover (deve ser positiva).
 
         Returns:
-            bool: True se removeu com sucesso, False caso contrário
+            bool: True se removeu com sucesso; False caso contrário.
         """
         if  quantity <= 0:
             logger.warning(f'Tentativa de remover quantidade inválida ({quantity}) do usuário {user_id}')
@@ -300,25 +311,27 @@ class UserRepository:
 
     async def add_role(self, user_id: int, role_id: int) -> bool:
         """
-        Adiciona role ao usuário
+        Adiciona uma role (cargo) ao usuário.
+
         Args:
-            user_id: ID do usuário
-            role_id: ID do item a ser removido
+            user_id (int): ID do usuário.
+            role_id (int): ID do cargo a ser adicionado.
         Returns:
-            bool: True se adcionou com sucesso, False caso contrário
+            bool: True se adicionou com sucesso (ou se já possuía o cargo);
+                  False em caso de erro.
         """
         try:
-            # Adciona o role caso o usuário não tenha
+            # Adiciona o role caso o usuário não tenha
             result = await self.collection.update_one(
                 {'_id': user_id},
                 {'$addToSet': {'role_ids': role_id}}
             )
             # Se a operação foi realizada
             if result.modified_count > 0:
-                logger.info(f'O cargo {role_id} foi adcionado ao usuário {user_id}')
+                logger.info(f'O cargo {role_id} foi adicionado ao usuário {user_id}')
             else:
-                # Se não modificou o cargo existia
-                logger.info(f'Usuário {user_id} já possuia o cargo {role_id} ')
+                # Se não modificou, o cargo já existia
+                logger.info(f'Usuário {user_id} já possuía o cargo {role_id}.')
 
             # Retorna True se o comando foi processado com sucesso pelo banco
             return result.acknowledged
@@ -329,13 +342,13 @@ class UserRepository:
 
     async def remove_role(self, user_id: int, role_id: int) -> bool:
         """
-        Remove a role do usuário
+        Remove uma role (cargo) do usuário.
 
         Args:
-            user_id:ID do usuário
-            role_id:ID do cargo a ser removido
+            user_id (int): ID do usuário.
+            role_id (int): ID do cargo a ser removido.
         Returns:
-            bool: True se removeu com sucesso, False caso contrário
+            bool: True se removeu com sucesso; False caso o usuário não possua o cargo ou em caso de erro.
 
         """
 
@@ -350,10 +363,10 @@ class UserRepository:
                 logger.info(f'Role {role_id} removida com sucesso do usuário {user_id}')
                 return True
 
-            logger.info(f'Usuário {user_id} não possuia o cargo {role_id} para ser removido!')
+            logger.info(f'Usuário {user_id} não possuía o cargo {role_id} para ser removido!')
             return False
 
         except Exception as e:
-            logger.error(f'Erro aoremover role: {e} ao usuário {user_id}', exc_info=True)
+            logger.error(f'Erro ao remover role: {e} do usuário {user_id}', exc_info=True)
             return False
 

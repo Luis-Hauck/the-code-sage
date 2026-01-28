@@ -9,14 +9,25 @@ from src.views.shop_view import ShopView, create_error_embed
 from src.app.config import MOD_LOG_CHANNEL_ID
 
 class ShopCog(commands.Cog):
+    """Comandos da loja (vitrine e compra de itens)."""
     def __init__(self, bot):
+        """Inicializa o Cog da loja.
+
+        Args:
+            bot (commands.Bot): Instância do bot principal, usada para acessar repositórios e serviços.
+        """
         self.bot = bot
-        self.economy_service = EconomyService(bot.user_repo, bot.item_repo)
+        self.economy_service:EconomyService = bot.economy_service
 
 
     @app_commands.command(name="abrir_loja", description="[Admin] Cria a vitrine de itens neste canal")
     @app_commands.checks.has_permissions(administrator=True)
     async def open_shop(self, interaction: discord.Interaction):
+        """Abre a vitrine da loja no canal atual.
+
+        Args:
+            interaction (discord.Interaction): Interação do comando.
+        """
         await interaction.response.defer()
 
         # Buscamos 100 itens

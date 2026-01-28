@@ -13,11 +13,14 @@ class MissionRepository:
         # Cria a conexão com a coleção missions
         self.collection = db.missions
 
-    async def create(self, mission_model:MissionModel) -> bool:
-        """
-        Cria uma nova missão
-        :param mission_model: modelo da missão a ser criado
-        :return: True se a missão foi criada, False caso contrário
+    async def create(self, mission_model: MissionModel) -> bool:
+        """Cria uma nova missão.
+
+        Args:
+            mission_model (MissionModel): Modelo da missão a ser criado.
+
+        Returns:
+            bool: True se a missão foi criada, False caso contrário.
         """
 
         try:
@@ -36,14 +39,17 @@ class MissionRepository:
             logger.error(f'Erro ao criar a missão de id{mission_model.mission_id}: {e}')
             return False
 
-    async def get_by_id(self, mission_id: int):
-        """
-        Busca uma missão pelo ID.
-        :param mission_id: ID da missão.
-        :return: MissionModel se encontrado, None se não encontrado ou em caso de erro.
+    async def get_by_id(self, mission_id: int) -> MissionModel | None:
+        """Busca uma missão pelo ID.
+
+        Args:
+            mission_id (int): ID da missão.
+
+        Returns:
+            MissionModel | None: MissionModel se encontrado, None se não encontrado ou em caso de erro.
         """
         try:
-            mission_data = await self.collection.find_one({'_id':mission_id})
+            mission_data = await self.collection.find_one({'_id': mission_id})
 
             if not mission_data:
                 logger.info('Item não encontrado')
@@ -55,13 +61,16 @@ class MissionRepository:
             logger.error(f'Erro ao buscar a missão de ID {mission_id}: {e}', exc_info=True)
             return None
 
-    async def update_status(self, mission_id:int, new_status: MissionStatus, completed_at: Optional[datetime] = None) -> bool:
-        """
-        Atualiza os status da missão.
-        :param mission_id: ID da missão.
-        :param new_status: Status da missão.
-        :param completed_at: data que a missão foi concluída.
-        :return: True se atualizou com sucesso, False caso contrário.
+    async def update_status(self, mission_id: int, new_status: MissionStatus, completed_at: Optional[datetime] = None) -> bool:
+        """Atualiza o status da missão.
+
+        Args:
+            mission_id (int): ID da missão.
+            new_status (MissionStatus): Novo status da missão.
+            completed_at (Optional[datetime], optional): Data de conclusão da missão. Defaults to None.
+
+        Returns:
+            bool: True se atualizou com sucesso, False caso contrário.
         """
 
         try:
@@ -87,11 +96,14 @@ class MissionRepository:
             return False
 
     async def add_participant(self, mission_id:int, evaluator_model: EvaluatorModel) -> bool:
-        """
-        Adciona um participante a missão caso ele ainda não esteja lá.
-        :param mission_id: ID da missão que o usuário vai participar.
-        :param evaluator_model: Usuário que vai ser avaldiado, sendo um objeto do tipo EvaluatorModel.
-        :return: True caso o participante seja adicioando/já esatva adcioando a missão, e False caso contrário
+        """Adiciona um participante à missão, caso ainda não esteja.
+
+        Args:
+            mission_id (int): ID da missão na qual o usuário participará.
+            evaluator_model (EvaluatorModel): Participante avaliado a ser inserido.
+
+        Returns:
+            bool: True se foi adicionado (ou já existia), False se a missão não existe.
         """
         try:
             evaluator_data = evaluator_model.model_dump()
@@ -124,17 +136,15 @@ class MissionRepository:
             return False
 
 
-    async def update_evaluator(self,
-                                  mission_id:int,
-                               evaluator_model: EvaluatorModel,
+    async def update_evaluator(self,mission_id: int,evaluator_model: EvaluatorModel) -> bool:
+        """Atualiza os dados de alguém que já foi avaliado.
 
+        Args:
+            mission_id (int): ID da missão onde o usuário foi avaliado.
+            evaluator_model (EvaluatorModel): Dados atualizados do avaliador.
 
-                                  ) -> bool:
-        """
-        ATUALIZA os dados de alguém que já foi avaliado
-        :param mission_id: Missão que o usuário foi avaliado;
-        :param evaluator_model: Usuário que vai ser atualizado na missão, sendo um objeto do tipo EvaluatorModel.
-        :return: True caso tenha conseguido registrar, e False caso o contrário.
+        Returns:
+            bool: True caso tenha conseguido registrar, False caso contrário.
         """
         try:
 

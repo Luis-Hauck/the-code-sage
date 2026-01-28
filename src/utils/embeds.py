@@ -7,8 +7,14 @@ from discord.types import embed
 from src.database.models.mission import EvaluationRank
 
 def create_error_embed(title:str, message: str) -> discord.Embed:
-    """
-    Função gerar embeds de erro.
+    """Cria um embed padronizado de erro (vermelho).
+
+    Args:
+        title (str): Título do embed.
+        message (str): Descrição detalhando o erro.
+
+    Returns:
+        discord.Embed: Objeto Embed configurado como erro.
     """
     return discord.Embed(title=title,
         description=message,
@@ -16,8 +22,14 @@ def create_error_embed(title:str, message: str) -> discord.Embed:
     )
 
 def create_info_embed(title:str, message: str) -> discord.Embed:
-    """
-    Função para avisos simples (Azul/Cinza).
+    """Cria um embed informativo (azul/cinza).
+
+    Args:
+        title (str): Título do embed.
+        message (str): Mensagem a ser exibida.
+
+    Returns:
+        discord.Embed: Objeto Embed configurado como informativo.
     """
     return discord.Embed(title=title,
         description=message,
@@ -29,13 +41,16 @@ class MissionEmbeds:
 
     @staticmethod
     def evaluation_success(target_user:discord.Member, rank:EvaluationRank, xp:int, coins:int) -> discord.Embed:
-        """
-        Gera o Embed de avaliação
-        :param target_user: Usuário avaliado;
-        :param rank: Rank da avaliação;
-        :param xp: XP ganho;
-        :param coins: Moedas ganhas;
-        :return: Retorna a embed gerada.
+        """Gera o embed de avaliação do usuário.
+
+        Args:
+            target_user (discord.Member): Usuário avaliado.
+            rank (EvaluationRank): Rank da avaliação.
+            xp (int): Quantidade de XP ganho.
+            coins (int): Quantidade de moedas ganhas.
+
+        Returns:
+            discord.Embed: Embed gerado com os detalhes da avaliação.
         """
 
         embed = discord.Embed(title=f'{target_user.display_name} Completou a missão!',
@@ -55,10 +70,13 @@ class MissionEmbeds:
 
     @staticmethod
     def mission_start(riddle_text) -> discord.Embed:
-        """
-        Gera o embed de quando uma missão e criada, juntamente com um enigma para ajudar.
-        :param riddle_text:
-        :return: O embed gerado.
+        """Gera o embed de início da missão com uma charada de apoio.
+
+        Args:
+            riddle_text (str): Texto da charada gerada para a missão.
+
+        Returns:
+            discord.Embed: Embed com instruções e a charada.
         """
 
         embed = discord.Embed(title='Missão criada!',
@@ -79,15 +97,18 @@ class MissionEmbeds:
 
     @staticmethod
     def mission_report(mission_id: int, mission_title:str, reporter_id: int, reporter_name:str, current_rank:str, reason: str) -> embed.Embed:
-        """
-        Gera o embed de report de missões
-        :param mission_id: ID da missão;
-        :param mission_title: Título da missão reportada;
-        :param reporter_id: ID do reportador;
-        :param reporter_name: Nome do reportador;
-        :param current_rank: Rank atual do reportador;
-        :param reason: Motivo do report;
-        :return: O embed gerado.
+        """Gera o embed de denúncia de missão.
+
+        Args:
+            mission_id (int): ID da missão.
+            mission_title (str): Título da missão reportada.
+            reporter_id (int): ID de quem reportou.
+            reporter_name (str): Nome de quem reportou.
+            current_rank (str): Rank atual do usuário que reporta.
+            reason (str): Motivo do report.
+
+        Returns:
+            embed.Embed: Embed gerado com os detalhes do report.
         """
 
         embed = discord.Embed(title=f'Report da missão: {mission_title}',
@@ -105,15 +126,19 @@ class MissionEmbeds:
 
     @staticmethod
     def admin_adjustment(target_user:discord.Member, old_rank:EvaluationRank, new_rank:EvaluationRank, xp_diff:int, coins_diff:int) -> embed.Embed:
-        """
-        Exibe o resultado de uma ajuste de rank de administrador.
-        Mostras a diferença de valores entre o antigo e o novo rank.
-        :param target_user: Usuário que recebeu o ajuste.
-        :param old_rank: Antigo rank;
-        :param new_rank: Novo rank;
-        :param xp_diff: Diferença de XP entre o antigo e o novo rank.
-        :param coins_diff: Diferença de moedas entre o antigo e o novo rank.
-        :return: Embed gerado.
+        """Gera o embed de ajuste administrativo de avaliação.
+
+        Mostra a diferença de valores entre o rank antigo e o novo.
+
+        Args:
+            target_user (discord.Member): Usuário que recebeu o ajuste.
+            old_rank (EvaluationRank): Rank anterior.
+            new_rank (EvaluationRank): Novo rank.
+            xp_diff (int): Diferença de XP entre os ranks.
+            coins_diff (int): Diferença de moedas entre os ranks.
+
+        Returns:
+            embed.Embed: Embed gerado com os detalhes do ajuste.
         """
 
         embed = discord.Embed(title=f'Ajuste de rank realizado!',
@@ -135,9 +160,10 @@ class MissionEmbeds:
 
     @staticmethod
     def report_confirmation() -> discord.Embed:
-        """
-        Feedback que o usuário vê ao reportar sua nota na missão.
-        :return: Embed gerado.
+        """Gera o feedback de confirmação após o usuário reportar uma avaliação.
+
+        Returns:
+            discord.Embed: Embed de confirmação para o usuário.
         """
         return discord.Embed(
             title='Denúncia Enviada',
@@ -150,9 +176,10 @@ class ShopEmbeds:
 
     @staticmethod
     def create_showcase() -> discord.Embed:
-        """
-       Gera o cabeçalho visual da loja
-        :return: discord.Embed
+        """Gera o cabeçalho visual da loja.
+
+        Returns:
+            discord.Embed: Embed com o cabeçalho da loja.
         """
 
         embed = discord.Embed(title='💰 Mercado do Servidor',
@@ -173,12 +200,16 @@ class InventoryEmbeds:
 
     @staticmethod
     def view_inventory(user_name: str, equipped_name: str, items_data: list[dict]) -> discord.Embed:
-        """
-        Gera o embed do inventário.
-        :param user_name: Nome do usuário para o título.
-        :param equipped_name: Nome do item já equipado (ou 'Nenhum').
-        :param items_data: Uma lista de dicionários.
-                           Ex: [{'name': 'Espada', 'qty': 1, 'type': 'Equipável', 'description': 'Uma espada de fogo.'}]
+        """Gera o embed do inventário do usuário.
+
+        Args:
+            user_name (str): Nome do usuário para o título.
+            equipped_name (str): Nome do item já equipado (ou 'Nenhum').
+            items_data (list[dict]): Lista de itens no formato
+                [{'name': str, 'qty': int, 'type': str, 'description': str}].
+
+        Returns:
+            discord.Embed: Embed com a listagem do inventário.
         """
 
         embed = discord.Embed(title=f'🎒 Inventário do {user_name}',
@@ -204,14 +235,17 @@ class UserEmbeds:
     def view_profile(user_name:str, current_level:int, current_xp:int, xp_next_level:int, progress_percent: int,coin_balance:int, equipped_item_name:str) -> discord.Embed:
         """
         Gera o embed do perfil do usuário
-        :param current_level: Nivel atual do usuário;
-        :param user_name: Nome do usuário;
-        :param current_xp: XP do usuário
-        :param xp_next_level: XP par ao próximo nível do usuário
-        :param progress_percent: Progresso(%) par ao próximo nível.
-        :param coin_balance: Moedas em caixa.
-        :param equipped_item_name: Nome do item equipado
-        :return: discord.Embed
+
+        Args:
+            current_level (str): Nivel atual do usuário;
+            user_name (int): Nome do usuário;
+            current_xp (int): XP do usuário
+            xp_next_level (int): XP par ao próximo nível do usuário
+            progress_percent (int): Progresso(%) par ao próximo nível.
+            coin_balance (int): Moedas em caixa.
+            equipped_item_name (str): Nome do item equipado
+        Returns:
+            discord.Embed: Embed com dados do inventário.
         """
 
         filled = int(progress_percent / 10)
@@ -231,10 +265,13 @@ class CodeSageEmbeds:
 
     @staticmethod
     def welcome_message(member:discord.Member) -> discord.Embed:
-        """
-        Mensagem de boas-vindas ao entrar no servidor.
-        :param member: discord.Member
-        :return: discord.Embed
+        """Mensagem de boas-vindas ao entrar no servidor.
+
+        Args:
+            member (discord.Member): Membro que entrou no servidor.
+
+        Returns:
+            discord.Embed: Embed de boas-vindas.
         """
         link_repo = 'https://github.com/Luis-Hauck/the-code-sage'
 
@@ -277,10 +314,13 @@ class CodeSageEmbeds:
 
     @staticmethod
     def welcome_back_message(member: discord.Member) -> discord.Embed:
-        """
-        Mensagem para usuários que já participaram e retornaram (Recuperação de dados).
-        :param member: discord.Member
-        :return: discord.Embed
+        """Mensagem para usuários que retornaram ao servidor.
+
+        Args:
+            member (discord.Member): Membro que voltou ao servidor.
+
+        Returns:
+            discord.Embed: Embed de boas-vindas de retorno.
         """
         link_repo = 'https://github.com/Luis-Hauck/the-code-sage'
 

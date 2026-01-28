@@ -21,7 +21,17 @@ logger = logging.getLogger(__name__)
 
 
 class TheCodeSageBot(commands.Bot):
+    """Cliente principal do bot Code Sage.
+
+    Responsável por inicializar repositórios, serviços, carregar cogs e
+    sincronizar slash commands com o Discord.
+    """
     def __init__(self):
+        """Inicializa a instância do bot.
+
+        Configura o prefixo de comandos e as intents necessárias. As
+        dependências (repositórios/serviços) são configuradas no setup_hook.
+        """
         # Herda da classe pai
         super().__init__(command_prefix='/', # Define o comando padrão
                          intents=discord.Intents.all() # Define as intents do bot
@@ -38,7 +48,13 @@ class TheCodeSageBot(commands.Bot):
 
 
     async def setup_hook(self):
-        """"O hook é chamado automaticamente antes do bot logar"""
+        """Configura as dependências e carrega os Cogs antes do login.
+
+        Este hook é chamado automaticamente pelo discord.py antes do
+        bot efetuar o login. Aqui conectamos ao banco, inicializamos
+        repositórios e serviços, carregamos os cogs e sincronizamos os
+        comandos de aplicativo (slash commands) no servidor de testes.
+        """
 
         # Conecta ao banco de dados e armazena a conexão na instância do bot
         self.db = await connect_to_database()
@@ -90,7 +106,11 @@ class TheCodeSageBot(commands.Bot):
 
 
     async def close(self):
-        """Hook chamado quando o bot é desligado"""
+        """Finaliza o bot e encerra recursos.
+
+        Fecha a conexão com o banco (se aberta) e delega o encerramento
+        ao método da classe base.
+        """
         logger.info('Encerrando o bot...')
 
         if self.db is not None:

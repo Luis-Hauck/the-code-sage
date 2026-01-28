@@ -4,17 +4,15 @@ from typing import List, Optional
 from enum import Enum
 
 class MissionStatus(str, Enum):
-    """
-    Representa os status de uma missão.
-    """
-    OPEN = 'aberta' #missão criada recebendo resposta
-    COMPLETED = 'concluida' # missão avaliada e aguardando ser fechada
-    UNDER_REVIEW = 'sob_revisao' # missão em análise
-    CLOSED = 'fechada'  # missão fechada e não pode mais er aberta
+    """Status possíveis de uma missão no ciclo de vida."""
+    OPEN = 'aberta'  # missão criada, recebendo respostas
+    COMPLETED = 'concluida'  # missão avaliada e aguardando ser fechada
+    UNDER_REVIEW = 'sob_revisao'  # missão em análise
+    CLOSED = 'fechada'  # missão fechada e não pode mais ser aberta
 
 class EvaluationRank(str, Enum):
     """
-    Representa os ranks das missões
+    Representa os ranks das missões de S à E.
     """
     S = 'S'
     A = 'A'
@@ -33,32 +31,36 @@ class EvaluationRank(str, Enum):
 
     @property
     def score(self) -> int:
-        """
-        :return: A nota númerica de (0 a 5) associada ao rank
-        """
-        scores = {'S':5, 'A':4, 'B':3, 'C':2, 'D':1, 'E':0}
+        """Nota numérica equivalente ao rank.
 
+        Returns:
+            int: Valor de 0 a 5 associado ao rank.
+        """
+        scores = {'S': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1, 'E': 0}
         return scores.get(self.value, 0)
 
     @property
     def description(self) -> str:
+        """Descrição textual do rank.
+
+        Returns:
+            str: Texto amigável para o usuário.
         """
-        :return: A descrição dos ranks
-        """
-        descriptions ={
-            'S':'Lendário',
-            'A':'Excelente',
+        descriptions = {
+            'S': 'Lendário',
+            'A': 'Excelente',
             'B': 'Bom',
             'C': 'Regular',
             'D': 'Ruim',
             'E': 'Falha na missão'
-
         }
         return descriptions.get(self.value, "Desconhecido")
 
     @property
     def color(self) -> int:
-        """Retorna a cor em Hex (int) para Embeds do Discord."""
+        """Cores em Hex para Embeds do Discord com base nos ranks.
+        Returns:
+            int: a cor em Hex (int) para Embeds do Discord."""
         colors = {
             "S": 0xFFD700,  # Dourado
             "A": 0x00FF00,  # Verde
@@ -89,9 +91,10 @@ class EvaluationRank(str, Enum):
 
     @property
     def thumbnail_url(self) -> str:
-        """
-        Caminho das imagens para os ranks das missões
-        :return: O caminho da imagem.
+        """URL da imagem associada ao rank para uso em Embeds.
+
+        Returns:
+            str: URL absoluta da imagem do rank.
         """
 
         images = {
@@ -108,7 +111,16 @@ class EvaluationRank(str, Enum):
 
 class EvaluatorModel(BaseModel):
     """
-    Representa um único avaliador dentro de uma missão.
+    Representa um usuário que foi avaliado em uma missõa.
+
+    Attributes:
+        user_id: ID único do Usuário avaliado.
+        username: Nome do usuário avaliado.
+        user_level_at_time: Nível que usuário estava quando completou a missão.
+        rank: Rank que usuário recebeu na missão.
+        xp_earned: Quantidade de experiência que o usuário recebeu na missão.
+        coins_earned: Quantidade de moedas que o usuário recebeu na missão.
+        evaluate_at: Horário em que o usuário foi avalaido.
     """
     # dados do usuário
     user_id: int
@@ -125,12 +137,14 @@ class EvaluatorModel(BaseModel):
 class MissionModel(BaseModel):
     """
     Modelo de dados para missões.
-    mission_id: id da thread criada
-    title: Titulo da thread
-    creator_id: Criador da thread
-    created_at: Data da criação da thread
-    status:
-    evaluators: Lista de Pessoas que foram avaliadas.
+    
+    Attributes:
+        mission_id: id da thread criada
+        title: Titulo da missão(thread)
+        creator_id: Criador da missão(thread)
+        created_at: Data da criação da missão(thread)
+        status: Estado atual da missão(thread).
+        evaluators: Lista de Pessoas que foram avaliadas.
     """
     mission_id: int = Field(alias='_id')
     title: str

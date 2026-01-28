@@ -8,17 +8,27 @@ from src.database.models.item import ItemType
 logger = logging.getLogger(__name__)
 
 class EconomyService:
+    """Regras de economia: compras e manipulação de itens equipáveis."""
     def __init__(self, user_repo: UserRepository, item_repo: ItemRepository):
+        """Inicializa o serviço de economia.
+
+        Args:
+            user_repo (UserRepository): Repositório de usuários.
+            item_repo (ItemRepository): Repositório de itens.
+        """
         self.user_repo = user_repo
         self.item_repo = item_repo
 
     async def buy_item(self, user_id: int, item_id: int, item_quantity: int) -> Tuple[bool, str]:
-        """
-        Processa a compra de um item
-        :param user_id: ID do usuário;
-        :param item_id: ID do item a ser comprado;
-        :param item_quantity: Quantidade de itens a serem comprados;
-        :return: (True/False, Mensagem)
+        """Processa a compra de um item.
+
+        Args:
+            user_id (int): ID do usuário.
+            item_id (int): ID do item a ser comprado.
+            item_quantity (int): Quantidade de itens a serem comprados.
+
+        Returns:
+            Tuple[bool, str]: (True/False, Mensagem)
         """
 
         # Buscamos os dados do item/usuário
@@ -54,11 +64,14 @@ class EconomyService:
         return True, f'Voces comprou {item.name} com sucesso!'
 
     async def equip_item(self, user_id: int, item_id: int) -> Tuple[bool, str]:
-        """
-        Equipa um item que está no inventário
-        :param user_id: ID do usuário para equipar o item;
-        :param item_id: ID do item a ser equipado;
-        :return: (True/False, Mensagem)
+        """Equipa um item que está no inventário do usuário.
+
+        Args:
+            user_id (int): ID do usuário que equipará o item.
+            item_id (int): ID do item a ser equipado.
+
+        Returns:
+            Tuple[bool, str]: (True/False, mensagem)
         """
 
         user = await self.user_repo.get_by_id(user_id)
@@ -86,10 +99,13 @@ class EconomyService:
         return True, "Item equipado com sucesso!"
 
     async def unequip_item(self,user_id: int) -> Tuple[bool, str]:
-        """
-        Desequipa um item equipado
-        :param user_id: ID do usuário para equipar o item;
-        :return: (True/False, Mensagem).
+        """Desequipa o item atualmente equipado pelo usuário.
+
+        Args:
+            user_id (int): ID do usuário que terá o item desequipado.
+
+        Returns:
+            Tuple[bool, str]: (True/False, mensagem)
         """
         user = await self.user_repo.get_by_id(user_id)
         if not user:

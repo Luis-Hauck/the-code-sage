@@ -17,18 +17,26 @@ SAGE_SYSTEM_INSTRUCTION = (
 
 
 class SageService:
+    """Cliente para gerar charadas do Code Sage via Google GenAI."""
     def __init__(self):
+        """Inicializa o cliente do serviço de IA com a chave de API configurada."""
         self.client = genai.Client(api_key=GEMINI_API_KEY)
         self.model_id = 'gemini-3-flash-preview'
 
-    async def generate_riddle(self, title: str, description: str,image_bytes:bytes=None, difficulty: str = "difícil") -> str:
-        """
-        Gera a charada da missão para ajudar o usuário
-        :param title: Título da missão
-        :param description: Descrição da missão
-        :param image_bytes: Bits que representama imagem em anexo da missão.
-        :param difficulty: Nível de dificuldade da missão, padrão dificil
-        :return: O texto da charada
+    async def generate_riddle(self, title: str, description: str, image_bytes: bytes | None = None, difficulty: str = "difícil") -> str:
+        """Gera uma charada enigmática para acompanhar a missão.
+
+        A charada dá dicas sutis sem revelar a solução. Se houver imagem anexa,
+        elementos visuais podem ser usados na charada.
+
+        Args:
+            title (str): Título da missão.
+            description (str): Descrição da missão.
+            image_bytes (bytes | None): Bytes da imagem anexada (opcional).
+            difficulty (str): Nível de dificuldade desejado para a charada.
+
+        Returns:
+            str: Texto da charada gerada.
         """
 
 

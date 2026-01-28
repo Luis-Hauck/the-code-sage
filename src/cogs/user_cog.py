@@ -15,7 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class UserCog(commands.Cog):
+    """Comandos de usuário (perfil e progresso)."""
     def __init__(self, bot):
+        """Inicializa o Cog de usuários.
+
+        Args:
+            bot (commands.Bot): Instância principal do bot contendo serviços e repositórios.
+        """
         self.bot = bot
         self.leveling_service: LevelingService = bot.leveling_service
         self.user_repo: UserRepository = bot.user_repo
@@ -23,6 +29,11 @@ class UserCog(commands.Cog):
 
     @app_commands.command(name="perfil", description="Exibe o seu perfil.")
     async def view_profile(self, interaction: discord.Interaction):
+        """Exibe o perfil do usuário atual (nível, progresso e saldo).
+
+        Args:
+            interaction (discord.Interaction): Interação do comando.
+        """
         await interaction.response.defer(ephemeral=True)
 
         user_id = interaction.user.id

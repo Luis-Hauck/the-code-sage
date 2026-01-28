@@ -14,17 +14,16 @@ class ItemType(str, Enum):
 
 
 class ItemModel(BaseModel):
-    """
-    Modelo de dados para os itens.
+    """Modelo de dados para itens da loja/inventário.
 
-    item_id: (int) id único do item
-    name: Nome do item
-    description: Descrição do item
-    price: Preço do item
-    type: Tipo do item ["cargo", "item_consumivel", "badge"]
-    effect: Efeito ao usar usar o item.
-    passive_effects: Efeitos passivos que o item dá.
-
+    Attributes:
+        item_id (int): ID único do item (chave primária no banco). Alias: _id.
+        name (str): Nome do item.
+        description (str): Descrição do item para exibição.
+        price (int): Preço do item em moedas.
+        item_type (ItemType): Tipo do item (consumível, equipável ou cargo).
+        effect (Optional[AnyEffect]): Efeito ativo aplicado ao usar o item.
+        passive_effects (List[AnyPassiveEffect]): Efeitos passivos aplicados enquanto equipado.
     """
     item_id: int = Field(alias='_id')
     name: str

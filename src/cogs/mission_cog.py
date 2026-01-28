@@ -6,26 +6,33 @@ import asyncio
 import logging
 
 from src.database.models.mission import EvaluationRank
+from src.services.mission_service import MissionService
 from src.utils.embeds import MissionEmbeds, create_error_embed, create_info_embed
 from src.utils.helpers import is_mission_channel
 
 logger = logging.getLogger(__name__)
 
 class MissionCog(commands.Cog):
+    """Comandos relacionados às missões (avaliar, revisar, encerrar)."""
     def __init__(self, bot):
+        """Inicializa o Cog de Missões.
+
+        Args:
+            bot (commands.Bot): Instância principal do bot contendo serviços e repositórios.
+        """
         self.bot = bot
-        self.service = bot.mission_service
+        self.mission_service:MissionService = bot.mission_service
 
 
     @app_commands.command(name="avaliar", description='Avalia quem te ajudou na missão.')
     @app_commands.describe(aventureiro='Quem te ajudou?', rank='Rank de S a E')
     async def evaluate(self, interaction: discord.Interaction, aventureiro: discord.Member, rank: str):
-        """
-        Comando para avaliar o ajudante.
-        :param interaction:
-        :param aventureiro:
-        :param rank:
-        :return:
+        """Avalia o ajudante na missão atual (thread).
+
+        Args:
+            interaction (discord.Interaction): Interação do comando.
+            aventureiro (discord.Member): Quem ajudou e será avaliado.
+            rank (str): Nota de S a E.
         """
         # verifica se é uma Thread
         if not is_mission_channel(interaction):
@@ -33,7 +40,7 @@ class MissionCog(commands.Cog):
 
         await interaction.response.defer()
 
-        success, data = await self.service.evaluate_user(
+        success, data = await self.mission_service.evaluate_user(
             mission_id=interaction.channel.id,
             author_id=interaction.user.id,
             user_id=aventureiro.id,
@@ -66,8 +73,11 @@ class MissionCog(commands.Cog):
 
 
     async def close_thread_task(self, thread: discord.Thread, delay: int):
-        """
-        Tarefa que espera X segundos e fecha a thread se ela ainda estiver aberta.
+        """Fecha a thread após um atraso se ela ainda estiver aberta.
+
+        Args:
+            thread (discord.Thread): A thread da missão.
+            delay (int): Tempo em segundos antes do encerramento automático.
         """
         # Espera o tempo de delay
         await asyncio.sleep(delay)
@@ -81,7 +91,7 @@ class MissionCog(commands.Cog):
             return
 
         # Verificamos se a thread está fechada no banco de dados
-        just_closed = await self.service.close_mission(thread.id)
+        just_closed = await self.mission_service.close_mission(thread.id)
 
         # Se retornou False, é porque alguém já fechou manualmente
         if not just_closed:
@@ -102,10 +112,11 @@ class MissionCog(commands.Cog):
                           description="Reporta a insatisfação do Rank da missão do Aventureiro")
     @app_commands.describe(motivo='Explique o por que o rank da missão está errado')
     async def review_mission(self, interaction: discord.Interaction, motivo: str):
-        """
-        Comando para solicitar a revisão do rank.
-        :param interaction: Objeto do discord.Interaction
-        :param motivo: Motivo para abrir a solicitação
+        """Solicita revisão do rank recebido na missão.
+
+        Args:
+            interaction (discord.Interaction): Interação do comando.
+            motivo (str): Motivo para abrir a solicitação.
         """
         # verifica se é uma Thread
         if not await is_mission_channel(interaction):
@@ -113,7 +124,7 @@ class MissionCog(commands.Cog):
 
         await interaction.response.defer(ephemeral=True)
 
-        success, data = await self.bot.mission_service.report_evaluation(interaction.channel.id,
+        success, data = await self.mission_service.report_evaluation(interaction.channel.id,
                                                                          interaction.user.id,
                                                                          motivo)
 
@@ -143,8 +154,10 @@ class MissionCog(commands.Cog):
     @app_commands.command(name="encerrar_missao",
                           description="Encerra a missão e arquiva o canal (Use caso tenha resolvido sozinho).")
     async def close_mission_command(self, interaction: discord.Interaction):
-        """
-        Permite que o dono da missão encerre o canal manualmente.
+        """Permite que o dono da missão encerre o canal manualmente.
+
+        Args:
+            interaction (discord.Interaction): Interação do comando.
         """
         # Verifica se é uma Thread de missão
         if not await is_mission_channel(interaction):

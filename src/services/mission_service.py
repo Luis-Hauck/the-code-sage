@@ -22,18 +22,29 @@ RANK_REWARDS = {
 
 
 class MissionService:
+    """Regras de negócio relacionadas às missões."""
     def __init__(self, mission_repo: MissionRepository, leveling_service: LevelingService, user_repo:UserRepository):
+        """Inicializa o serviço de missões.
+
+        Args:
+            mission_repo (MissionRepository): Repositório de missões.
+            leveling_service (LevelingService): Serviço responsável por nível/cargos e bônus.
+            user_repo (UserRepository): Repositório de usuários.
+        """
         self.mission_repo = mission_repo
         self.leveling_service = leveling_service
         self.user_repo = user_repo
 
-    async def register_mission(self, mission_id: int, title: str, author_id:int) -> bool:
-        """
-        Cria a missão assim que a thread é criada no Discord
-        :param mission_id: ID da thread(missão) no Discord;
-        :param title: Título da thread;
-        :param author_id: ID de quem criou a thread;
-        :return: (True/False, Mensagem).
+    async def register_mission(self, mission_id: int, title: str, author_id: int) -> bool:
+        """Cria a missão assim que a thread é criada no Discord.
+
+        Args:
+            mission_id (int): ID da thread (missão) no Discord.
+            title (str): Título da thread.
+            author_id (int): ID de quem criou a thread.
+
+        Returns:
+            bool: True em caso de sucesso, False caso contrário.
         """
 
         mission = MissionModel(
@@ -47,16 +58,18 @@ class MissionService:
 
         return await self.mission_repo.create(mission)
 
-    async def evaluate_user(self,mission_id:int, author_id, user_id, rank:str, guild) -> Tuple[bool, Any]:
-        """
-        Lógica do comando /avaliar.
-        Valida, Premia (Leveling) e Registra (Mission).
-        :param mission_id: ID da thread(missão) no Discord;
-        :param author_id:ID de quem criou a thread;
-        :param user_id: ID do úsuario a ser avaliado;
-        :param rank: Nota que o úsuario recebeu.
-        :param guild: Guilda onde a thread foi criada.
-        :return: (True/False, Mensagem)
+    async def evaluate_user(self, mission_id: int, author_id: int, user_id: int, rank: str, guild) -> Tuple[bool, Any]:
+        """Lógica do comando /avaliar: valida, premia (Leveling) e registra (Mission).
+
+        Args:
+            mission_id (int): ID da thread (missão) no Discord.
+            author_id (int): ID de quem criou a thread.
+            user_id (int): ID do usuário a ser avaliado.
+            rank (str): Nota que o usuário recebeu (S, A, B, C, D, E).
+            guild: Guilda onde a thread foi criada.
+
+        Returns:
+            Tuple[bool, Any]: (True, dados_da_avaliação) em caso de sucesso ou (False, mensagem_de_erro) em caso de falha.
         """
 
         # Buscamos o user
@@ -133,11 +146,14 @@ class MissionService:
 
 
 
-    async def close_mission(self, mission_id: int):
-        """
-        Atualiza o status da missão no banco para CLOSED.
-        :param mission_id: ID da missão a ser fechada.
-        :return: True se foi fechada agora, False caso contrário
+    async def close_mission(self, mission_id: int) -> bool:
+        """Atualiza o status da missão no banco para CLOSED.
+
+        Args:
+            mission_id (int): ID da missão a ser fechada.
+
+        Returns:
+            bool: True se foi fechada agora, False caso contrário.
         """
 
         try:
@@ -162,12 +178,16 @@ class MissionService:
 
 
     async def report_evaluation(self, mission_id: int, reporter_id: int, reason: str) -> Tuple[bool, Optional[Dict[str, Any]]] | Tuple[bool, str]:
-        """
-        Envia um alerta para os moderadores sobre uma avaliação injusta.
-        :param mission_id: ID da missão;
-        :param reporter_id: ID de quem reportou a missão;
-        :param reason: Motivo da reclamação;
-        :return: (True, {dados_do_report}) ou (False, "Mensagem de erro")
+        """Reporta aos moderadores uma avaliação potencialmente injusta.
+
+        Args:
+            mission_id (int): ID da missão.
+            reporter_id (int): ID de quem está reportando.
+            reason (str): Motivo da reclamação.
+
+        Returns:
+            Tuple[bool, Optional[Dict[str, Any]]] | Tuple[bool, str]:
+                (True, dados_do_report) em caso de sucesso, ou (False, mensagem_de_erro) em caso de falha.
         """
         mission = await self.mission_repo.get_by_id(mission_id)
         if not mission:
@@ -190,13 +210,19 @@ class MissionService:
 
     async def adjust_evaluation(self, mission_id: int, target_user_id: int, new_rank_str: str, guild) -> Tuple[
         bool, Any]:
-        """
-        Altera a nota de um usuário, recalculando XP e Coins (Estorno + Novo Depósito).
-        :param mission_id:
-        :param target_user_id:
-        :param new_rank_str:
-        :param guild:
-        :return:
+        """Ajusta a avaliação de um usuário, recalculando XP e moedas.
+
+        O processo realiza estorno da avaliação anterior e aplica os novos
+        valores com base no novo rank informado, incluindo bônus de itens.
+
+        Args:
+            mission_id (int): ID da missão.
+            target_user_id (int): ID do usuário cuja avaliação será ajustada.
+            new_rank_str (str): Novo rank a ser aplicado (S, A, B, C, D, E).
+            guild: Guild do Discord onde os cargos podem ser sincronizados, se necessário.
+
+        Returns:
+            Tuple[bool, Any]: (True, dados_do_ajuste) em caso de sucesso; (False, mensagem_de_erro) caso contrário.
         """
         # Busca a missão
         mission = await self.mission_repo.get_by_id(mission_id)

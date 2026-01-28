@@ -6,7 +6,13 @@ from src.services.economy_service import EconomyService
 from utils.embeds import create_error_embed, create_info_embed, InventoryEmbeds
 
 class InventoryCog(commands.Cog):
+    """Comandos relacionados ao inventário (equipar, desequipar, listar)."""
     def __init__(self, bot):
+        """Inicializa o Cog de Inventário.
+
+        Args
+            bot (commands.Bot): Instância principal do bot.
+        """
         self.bot = bot
         self.economy_service:EconomyService = bot.economy_service
 

@@ -6,6 +6,8 @@ async def is_mission_channel(interaction: discord.Interaction) -> bool:
     """
     Verifica se o comando está sendo usado dentro de uma Thread de Missão válida.
     Se não estiver, já envia a mensagem de erro e retorna False.
+    Args:
+        interaction (discord.Interaction): Interação do comando.
     """
     # Verifica se é Thread e se o pai é o canal de missões
     if not isinstance(interaction.channel, discord.Thread) or interaction.channel.parent_id != MISSION_CHANNEL_ID:

@@ -20,7 +20,7 @@ class ItemRepository:
         Cria um novo item no banco de dados.
 
         Args:
-            item_model: Modelo de item a ser criado
+            item_model (ItemModel): Modelo de item a ser criado
 
         Returns:
             bool: True se criou com sucesso, False caso contrário
@@ -41,15 +41,18 @@ class ItemRepository:
             logger.error(f'Erro inesperado ao criar o item: {e}')
             return False
 
-    async def get_by_id(self, item_id:int):
-        """
-        Busca um item pelo ID.
-        :param item_id: ID do item a ser buscado.
-        :return: ItemModel se encontrado, None se não encontrado ou em caso de erro.
+    async def get_by_id(self, item_id: int) -> ItemModel | None:
+        """Busca um item pelo ID.
+
+        Args:
+            item_id (int): ID do item a ser buscado.
+
+        Returns:
+            ItemModel | None: ItemModel se encontrado, None se não encontrado ou em caso de erro.
         """
 
         try:
-            item_data = await self.collection.find_one({'_id':item_id})
+            item_data = await self.collection.find_one({'_id': item_id})
 
             if not item_data:
                 logging.info('Usuário não encontrado')
@@ -62,11 +65,14 @@ class ItemRepository:
             return None
 
     async def update_price(self, item_id: int, new_price: int) -> bool:
-        """
-        Atualiza o preço d eum item
-        :param item_id: ID do item.
-        :param new_price: Novo preço do item.
-        :return: True se a operação foi realizada e False caso contrário.
+        """Atualiza o preço de um item.
+
+        Args:
+            item_id (int): ID do item.
+            new_price (int): Novo preço do item.
+
+        Returns:
+            bool: True se a operação foi realizada, False caso contrário.
         """
 
         try:
@@ -89,9 +95,14 @@ class ItemRepository:
 
     async def delete(self, item_id: int) -> bool:
         """
-        Deleta um item
-        :param item_id: ID do item
-        :return: True se a operação foi realizada e False caso contrário.
+        Deleta um item com base no ID
+
+        Args:
+            item_id (int): ID do item
+
+        Returns:
+            bool: True se a operação foi realizada e False caso contrário.
+
         """
         try:
             result = await self.collection.delete_one({'_id': item_id})
@@ -110,7 +121,9 @@ class ItemRepository:
     async def get_all(self) -> List[ItemModel]:
         """
         Busca todos os itens cadastrados
-        :return: Retorna uma lista com 100 itens cadastrados
+
+        Returns:
+            list[ItemModel]: Lista com todos os itens cadastrados
         """
         try:
             logger.info(f'Buscando todos os itens cadastrados')
@@ -124,11 +137,14 @@ class ItemRepository:
             logger.error(f'Erro ao buscar todos os itens: {e}', exc_info=True)
             return []
 
-    async def upsert(self, item_model: ItemModel):
+    async def upsert(self, item_model: ItemModel) -> bool:
         """
         Cria ou Atualiza um item (Se o ID já existe, atualiza os dados).
-        :param item_model: Modelo de item a ser criado
-        :return: True se criou com sucesso, False caso contrário
+
+        Args:
+            item_model (ItemModel): Modelo de item a ser criado
+        Returns:
+            bool: True se criou com sucesso, False caso contrário
         """
         try:
 

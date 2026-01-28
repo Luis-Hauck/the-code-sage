@@ -11,12 +11,23 @@ from src.utils.embeds import MissionEmbeds, create_error_embed, create_info_embe
 logger = logging.getLogger(__name__)
 
 class AdminCog(commands.Cog):
+    """Comandos administrativos (sync e ajustes de avaliação)."""
     def __init__(self, bot):
+        """Inicializa o Cog de Administração.
+
+        Args:
+            bot (commands.Bot): Instância principal do bot.
+        """
         self.bot = bot
 
     @app_commands.command(name="sync_users", description="Registra todos os membros atuais do server no banco de dados.")
     @app_commands.checks.has_permissions(administrator=True)
     async def sync_users(self, interaction: discord.Interaction):
+        """
+        Registra todos os membros atuais do server no banco de dados.
+        Args:
+            interaction (discord.Interaction): Interação do comando.
+        """
         await interaction.response.defer(ephemeral=True)
 
         # Acessa o repo de usuários
@@ -60,11 +71,12 @@ class AdminCog(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(user='O usuário que será reavaliado.', novo_rank='Novo rank que  usuário vai receber!')
     async def adjust_rank(self, interaction: discord.Interaction, user:discord.Member, novo_rank: str):
-        """
-        Comando utilizado pelos administradores para ajustar uma avaliação!
-        :param user: Usuário que será reavaliado.
-        :param interaction: discord.Interaction
-        :param novo_rank: Novo rank.
+        """Ajusta o rank da avaliação de um usuário (apenas Admin).
+
+        Args:
+            interaction (discord.Interaction): Interação do comando.
+            user (discord.Member): Usuário que será reavaliado.
+            novo_rank (str): Novo rank a ser aplicado.
         """
         # verifica se é uma Thread
         if not is_mission_channel(interaction):

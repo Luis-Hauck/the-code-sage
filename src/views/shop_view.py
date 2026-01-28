@@ -7,9 +7,21 @@ from src.database.models.item import ItemModel, ItemType
 
 
 class ShopDropdown(ui.Select):
-    def __init__(self, items: list[ItemModel], economy_service: EconomyService):
-        self.economy_service = economy_service
+    """
+    Componente de menu suspenso (Select) para listagem de itens da loja.
 
+    Renderiza opções com nome, preço, breve descrição e um emoji indicando o tipo
+    do item. Ao selecionar, aciona a compra via EconomyService.
+    """
+    def __init__(self, items: list[ItemModel], economy_service: EconomyService):
+        """
+        Inicializa o dropdown com uma lista de itens e o serviço de economia.
+
+        Args:
+            items (list[ItemModel]): Itens disponíveis para compra.
+            economy_service (EconomyService): Serviço responsável por processar a compra.
+        """
+        self.economy_service = economy_service
 
         options = []
         for item in items:
@@ -39,7 +51,16 @@ class ShopDropdown(ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         """
-        Esta função roda quando o usuário escolhe uma opção no menu.
+        Manipula a seleção do usuário no dropdown e tenta realizar a compra.
+
+        Args:
+            interaction (discord.Interaction): Interação do Discord que contém
+                o usuário e o valor selecionado.
+
+        Comportamento:
+            - Lê o item selecionado.
+            - Defer da resposta (ephemeral).
+            - Chama EconomyService.buy_item e envia um embed de sucesso/erro.
         """
 
         # self.values é uma lista de strings com os values selecionados.
@@ -64,7 +85,21 @@ class ShopDropdown(ui.Select):
 
 
 class ShopView(ui.View):
+    """
+    View que agrega o dropdown da loja.
+
+    Esta view é responsável por conter o componente ShopDropdown e manter o
+    timeout desativado (persistente) para que os botões continuem interativos
+    até serem manualmente removidos/desativados.
+    """
     def __init__(self, items, economy_service: EconomyService):
+        """
+        Inicializa a view com os itens e o serviço de economia.
+
+        Args:
+            items (list[ItemModel]): Lista de itens disponíveis para compra.
+            economy_service (EconomyService): Serviço utilizado pelo dropdown para efetuar compras.
+        """
         super().__init__(timeout=None)
         if items:
             self.add_item(ShopDropdown(items, economy_service))
