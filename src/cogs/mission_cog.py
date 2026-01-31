@@ -35,7 +35,7 @@ class MissionCog(commands.Cog):
             rank (str): Nota de S a E.
         """
         # verifica se é uma Thread
-        if not is_mission_channel(interaction):
+        if not await is_mission_channel(interaction):
             return
 
         await interaction.response.defer()
