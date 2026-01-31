@@ -277,7 +277,7 @@ class CodeSageEmbeds:
 
         embed = discord.Embed(title=f'🔥 Uma nova chama se acende na Code Cave!',
                               description=(f'Seja muito bem-vindo,{member.mention} ao servidor!\n'
-                                          f'>Eu sou o **Code Sage**, o grande sábio deste servidor\n\n'
+                                          f'> Eu sou o **Code Sage**, o grande sábio deste servidor\n\n'
                                           f'**Além disso você sabia que eu sou um projeto Open Source?**'
                                           f'Você pode contribuir visitando o **[repositório do meu criador]({link_repo})**'
                                 ),
@@ -289,7 +289,9 @@ class CodeSageEmbeds:
 
         embed.add_field(
             name="🧭 Primeiros Passos",
-            value="• Leia as **[regras](#)**\n• Escolha seus **[Cargos](#)**\n• Apresente-se no **[Chat Geral](#)**",
+            value="• Leia as **[regras](#)**\n"
+                  "• Escolha seus **[Cargos](#)**\n"
+                  "• Apresente-se no **[Chat Geral](#)**",
             inline=True
         )
 
@@ -300,8 +302,8 @@ class CodeSageEmbeds:
                 "🚀 **Python & Automação**\n"
                 "🧪 **Data Science e IA**\n"
                 "🛠️ **Projetos Práticos (como este bot!)**\n"
-                "🗣️ **Bate papo ao vivo**"
-                f"*Clique no botão para conhecer!*"
+                "🗣️ **Bate papo ao vivo**\n"
+                f"**Clique no botão para conhecer!**"
             ),
             inline=False
         )
@@ -343,7 +345,7 @@ class CodeSageEmbeds:
         embed.add_field(
             name="📺 Enquanto você estava fora...",
             value=(
-                "O canal **Eitech** continuou produzindo:\n"
+                "O canal **Eitech** continuou produzindo vídeos de:\n"
                 "🚀 **Python & Automação**\n"
                 "🧪 **Data Science e IA**\n"
                 "🛠️ **Novos Projetos Práticos**\n"
