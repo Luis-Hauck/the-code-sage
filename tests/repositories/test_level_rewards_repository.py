@@ -78,7 +78,7 @@ async def test_get_all_reward_role_ids(mock_db):
     mock_cursor.to_list = AsyncMock(return_value=raw_data)
 
 
-    mock_db.level_rewards.find.return_value = mock_cursor
+    mock_db.level_rewards.find = MagicMock(return_value=mock_cursor)
 
     repo = LevelRewardsRepository(db=mock_db)
     result = await repo.get_all_reward_role_ids()
