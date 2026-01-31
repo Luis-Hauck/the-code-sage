@@ -90,6 +90,10 @@ class EventsCog(commands.Cog):
         Args:
             thread (discord.Thread): Representa uma thread criada no servidor.
         """
+
+        # A imagem inicia vazia
+        image_bytes = None
+
         # Lógica de criar uma sessão com os dados do criar e a quantidade de pessoas avaliadas
         if thread.parent_id == MISSION_CHANNEL_ID:
             description = ''
