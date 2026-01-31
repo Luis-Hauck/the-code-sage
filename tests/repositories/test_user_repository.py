@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
 from pymongo.errors import DuplicateKeyError
+from pymongo import ReturnDocument
 
 from src.database.models.user import UserModel, UserStatus
 from repositories.user_repository import UserRepository
@@ -29,7 +30,7 @@ def sample_user() -> UserModel:
         coins=500,
         equipped_item_id=None,
         role_ids=[],
-        inventory={'101': 2}
+        inventory={101: 2}
     )
 
 
@@ -92,21 +93,32 @@ async def test_update_status(mock_db, status_to_set):
     (456, -10, -20),  # Caso com valores negativos
     (789, 0, 0)  # Caso com valores zero
 ])
-async def test_add_xp_coins(mock_db, user_id, xp, coins):
+async def test_add_xp_coins(mock_db, sample_user, user_id, xp, coins):
     """Testa se add_xp_coins chama update_one com o operador $inc correto."""
-    mock_db.users.update_one.return_value = MagicMock(modified_count=True)
     user_repo = UserRepository(db=mock_db)
-    result = await user_repo.add_xp_coins(user_id=user_id, xp=xp, coins=coins)
 
-    # A lógica da função real não chama update_one se os valores forem 0
+    # Configuração para quando os valores são 0 (chama get_by_id -> find_one)
     if xp == 0 and coins == 0:
-        assert result is True
-        mock_db.users.update_one.assert_not_awaited()
+        mock_db.users.find_one.return_value = sample_user.model_dump(by_alias=True)
+
+        result = await user_repo.add_xp_coins(user_id=user_id, xp=xp, coins=coins)
+
+        assert isinstance(result, UserModel)
+        mock_db.users.find_one_and_update.assert_not_awaited()
+        mock_db.users.find_one.assert_awaited()
+
+    # Configuração para quando há valores (chama find_one_and_update)
     else:
-        assert result is True
-        mock_db.users.update_one.assert_awaited_with(
+        # find_one_and_update retorna o documento atualizado (dicionário)
+        mock_db.users.find_one_and_update.return_value = sample_user.model_dump(by_alias=True)
+
+        result = await user_repo.add_xp_coins(user_id=user_id, xp=xp, coins=coins)
+
+        assert isinstance(result, UserModel)  # O repositório retorna o objeto, não True
+        mock_db.users.find_one_and_update.assert_awaited_with(
             {'_id': user_id},
-            {'$inc': {'xp': xp, 'coins': coins}}
+            {'$inc': {'xp': xp, 'coins': coins}},
+            return_document=ReturnDocument.AFTER
         )
 
 
@@ -115,7 +127,7 @@ async def test_add_xp_coins_database_error(mock_db):
     mock_db.users.update_one.side_effect = Exception("Erro de conexão")
     user_repo = UserRepository(db=mock_db)
     result = await user_repo.add_xp_coins(user_id=5, xp=50, coins=100)
-    assert result is False
+    assert result is None
 
 
 # USA `parametrize` para combinar vários testes em um só
@@ -184,7 +196,7 @@ async def test_equip_item_already_equipped(mock_db):
 async def test_remove_all_item_from_inventory(mock_db, sample_user):
     """Testa a função remove_item_from_inventory quando removemos todos os itens do inventário"""
 
-    sample_user.inventory = {'101': 1}
+    sample_user.inventory = {101: 1}
 
     mock_db.users.find_one.return_value = sample_user.model_dump(by_alias=True)
 
@@ -192,7 +204,7 @@ async def test_remove_all_item_from_inventory(mock_db, sample_user):
 
     user_repo = UserRepository(db=mock_db)
 
-    result = await user_repo.remove_item_from_inventory(user_id=sample_user.user_id, item_id='101', quantity=1)
+    result = await user_repo.remove_item_from_inventory(user_id=sample_user.user_id, item_id=101, quantity=1)
 
     assert result is True
 
@@ -204,7 +216,7 @@ async def test_remove_all_item_from_inventory(mock_db, sample_user):
 async def test_remove_item_from_inventory(mock_db, sample_user):
     """Testa a função remove_item_from_inventory quando removemos 1 item do inventário"""
 
-    sample_user.inventory = {'101': 2} # Start with 2 items
+    sample_user.inventory = {101: 2} # Start with 2 items
     mock_db.users.find_one.return_value = sample_user.model_dump(by_alias=True)
     mock_db.users.update_one.return_value = MagicMock(modified_count=1)
     user_repo = UserRepository(db=mock_db)
@@ -213,7 +225,7 @@ async def test_remove_item_from_inventory(mock_db, sample_user):
     quantity_to_remove = 1
     result = await user_repo.remove_item_from_inventory(
         user_id=sample_user.user_id,
-        item_id='101',
+        item_id=101,
         quantity=quantity_to_remove
     )
 
