@@ -37,6 +37,19 @@ def sample_mission() -> MissionModel:
                         completed_at=datetime.today()
                    )
 
+@pytest.fixture()
+def sample_evaluator() -> EvaluatorModel:
+    """Cria um objeto do tipo EvaluatorModel"""
+    return EvaluatorModel(
+        user_id=555,
+        rank=EvaluationRank.S,
+        user_level_at_time=10,
+        xp_earned=100,
+        coins_earned=50,
+        evaluate_at=datetime.today(),
+        username='Luis'
+    )
+
 
 async def test_create_mission_sucess(mock_db, sample_mission):
     """Testa se o método create chama insert_one com os dados corretos."""
@@ -88,27 +101,22 @@ async def test_update_status_success(mock_db):
     assert args[1]['$set']['status'] == MissionStatus.COMPLETED
 
 
-async def test_register_evaluation_success(mock_db):
+async def test_add_participant_success(mock_db, sample_evaluator):
     """
     Testa registrar a nota de um usuário.
     Verifica se o filtro composto e o operador posicional ($) estão corretos.
     """
-    mock_db.missions.update_one.return_value = MagicMock(matched_count=1)
+    mock_db.missions.update_one.return_value = MagicMock(modified_count=1)
     repo = MissionRepository(db=mock_db)
 
     mission_id = 101
-    user_id = 555
-    score = 5
-    rank = EvaluationRank.S
+    fixed_time = datetime.now()
 
-    result = await repo.register_evaluation(
+
+
+    result = await repo.add_participant(
         mission_id=mission_id,
-        user_id=user_id,
-        score=score,
-        rank=rank,
-        level_at_time=10,
-        xp=100,
-        coins=50
+        evaluator_model=sample_evaluator
     )
 
     assert result is True
@@ -116,61 +124,82 @@ async def test_register_evaluation_success(mock_db):
     mock_db.missions.update_one.assert_awaited_with(
         {
             "_id": mission_id,
-            "evaluators.user_id": user_id
+            "evaluators.user_id": {'$ne': 555}
         },
-
         {
-            "$set": {
-                'evaluators.$.user_id': 555,
-                'evaluators.$.level_at_time': 10,
-                'evaluators.$.rank': rank,
-                'evaluators.$.score': score,
-                'evaluators.$.coins': 50,
-                'evaluators.$.xp': 100,
-
+            "$push": {
+                # O Pydantic gera o dicionário perfeito para você comparar
+                'evaluators': sample_evaluator.model_dump()
             }
         }
     )
 
 
-async def test_register_evaluation_user_not_in_list(mock_db):
+async def test_add_participant_mission_not_exist(mock_db, sample_evaluator):
     """
-    Testa falha quando o usuário não está na lista de avaliadores.
-    (Matched count será 0 pois o filtro "evaluators.user_id" falhará)
+    Testa falha quando a missão não existe.
     """
-    mock_db.missions.update_one.return_value = MagicMock(matched_count=0)
+    mock_db.missions.update_one.return_value = MagicMock(modified_count=0)
+    mock_db.missions.count_documents.return_value = 0
     repo = MissionRepository(db=mock_db)
 
-    result = await repo.register_evaluation(
-        mission_id=101,
-        user_id=999,
-        score=5, rank=EvaluationRank.S,
-        level_at_time=1, xp=0, coins=0
+
+
+    result = await repo.add_participant(
+        mission_id=9999,
+        evaluator_model=sample_evaluator
+
     )
 
     assert result is False
 
-
-async def test_add_participant(mock_db):
-    """Testa adicionar um usuário na lista de participantes"""
-    mock_db.missions.update_one.return_value = MagicMock(modified_count=1)
+async def test_update_evaluator_success(mock_db, sample_evaluator):
+    """
+    Testa o sucesso de uma atualização de uma pessoa avalaida na missão
+    """
+    mock_db.missions.update_one.return_value = MagicMock(matched_count=1)
     repo = MissionRepository(db=mock_db)
 
-    new_participant = EvaluatorModel(user_id=999,
-                                     username= 'Luis',
-                                        user_level_at_time=1
-                                     )
+    mission_id = 101
 
-    result = await repo.add_participant(mission_id=101, evaluator_model=new_participant)
+
+
+    result = await repo.update_evaluator(mission_id=101,
+                                   evaluator_model=sample_evaluator
+    )
 
     assert result is True
 
-    args, _ = mock_db.missions.update_one.await_args
-    filtro_usado = args[0]
-    update_usado = args[1]
+    mock_db.missions.update_one.assert_awaited_with(
+        {
+            "_id": mission_id,
+            "evaluators.user_id": sample_evaluator.user_id
+        },
+        {
+            "$set": {
+                'evaluators.$.level_at_time': sample_evaluator.user_level_at_time,
+                'evaluators.$.rank': sample_evaluator.rank,
+                'evaluators.$.coins_earned': sample_evaluator.coins_earned,
+                'evaluators.$.xp_earned': sample_evaluator.xp_earned,
+                'evaluators.$.evaluate_at': sample_evaluator.evaluate_at
+            }
+        }
+    )
 
-    assert filtro_usado['_id'] == 101
-    assert filtro_usado['evaluators.user_id'] == {'$ne':999}
-    assert update_usado['$push']['evaluators']['user_id'] == 999
+async def test_update_evaluator_fail(mock_db, sample_evaluator):
+    """
+    Testa a falha de uma atualizazação de uma pessoa avalaida na missão
+    """
+    mock_db.missions.update_one.return_value = MagicMock(matched_count=0)
+    repo = MissionRepository(db=mock_db)
 
+    mission_id = 107
+
+
+
+    result = await repo.update_evaluator(mission_id=107,
+                                   evaluator_model=sample_evaluator
+    )
+
+    assert result is False
 

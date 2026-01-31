@@ -126,12 +126,11 @@ async def test_delete_item_not_found(mock_db):
 async def test_get_all_success(mock_db, sample_item):
     """Testa se get_all retorna uma lista de todos os itens."""
 
-    mock_cursor = AsyncMock()
-    # Simulamos que o banco retornou uma lista com 1 item
-    mock_cursor.to_list.return_value = [sample_item.model_dump(by_alias=True)]
+    mock_cursor = MagicMock()
 
-    # Quando chamarem find(), retorna esse cursor configurado
-    mock_db.items.find.return_value = mock_cursor
+    mock_cursor.to_list = AsyncMock(return_value=[sample_item.model_dump(by_alias=True)])
+
+    mock_db.items.find = MagicMock(return_value=mock_cursor)
 
     item_repo = ItemRepository(db=mock_db)
     result = await item_repo.get_all()
@@ -149,7 +148,7 @@ async def test_get_all_empty(mock_db):
     """Testa se get_all lida bem com banco vazio."""
 
     mock_cursor = AsyncMock()
-    mock_cursor.to_list.return_value = []  # Lista vazia
+    mock_cursor.to_list.return_value = []
     mock_db.items.find.return_value = mock_cursor
 
     item_repo = ItemRepository(db=mock_db)
