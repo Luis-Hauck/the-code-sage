@@ -165,12 +165,12 @@ class MissionRepository:
             )
 
             if result.matched_count > 0:
-                logger.info(f'O usuário {evaluator_model.user_id} foi avaliado com sucesso na missão {mission_id}, recebendo {evaluator_model.xp_earned}xp e {evaluator_model.coins_earned} moedas')
+                logger.info(f'O usuário {evaluator_model.user_id} teve os dados atualizados com sucesso! Na missão {mission_id}, recebendo {evaluator_model.xp_earned}xp e {evaluator_model.coins_earned} moedas')
                 return True
 
-            logger.warning(f'Falha ao avaliar o usuário {evaluator_model.user_id} na missão {mission_id}')
+            logger.warning(f'Falha ao atualziar a avaliação do usuário {evaluator_model.user_id} na missão {mission_id}')
             return False
 
         except Exception as e:
-            logger.error(f'Erro ao tentar avaliar o usuário {evaluator_model.user_id} na missão {mission_id}: {e}')
+            logger.error(f'Erro ao tentar atualizar a avalição o usuário {evaluator_model.user_id} na missão {mission_id}: {e}')
             return False
