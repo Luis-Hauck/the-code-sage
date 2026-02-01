@@ -132,9 +132,9 @@ async def test_add_xp_coins_database_error(mock_db):
 
 # USA `parametrize` para combinar vários testes em um só
 @pytest.mark.parametrize("user_id, item_id, quantity", [
-    (123, '50', 100),  # Caso de sucesso normal
-    (456, '268', 6),  # Caso com valores negativos
-    (789, '588', 0)  # Caso com valores zero
+    (123, 50, 100),  # Caso de sucesso normal
+    (456, 268, 6),  # Caso com valores negativos
+    (789, 588, 0)  # Caso com valores zero
 ])
 
 async def test_add_item_to_inventory(mock_db, user_id, item_id, quantity):
@@ -166,7 +166,7 @@ async def test_equip_item_success(mock_db):
     user_repo = UserRepository(db=mock_db)
 
     # Passamos os IDs
-    result = await user_repo.equip_item(user_id=12345, item_id='101')
+    result = await user_repo.equip_item(user_id=12345, item_id=101)
 
     assert result is True
     mock_db.users.update_one.assert_awaited_with(
@@ -174,7 +174,7 @@ async def test_equip_item_success(mock_db):
             '_id': 12345,
             'inventory.101': {'$gt': 0}
         },
-        {'$set': {'equipped_item_id': '101'}}
+        {'$set': {'equipped_item_id': 101}}
     )
 
 
@@ -188,7 +188,7 @@ async def test_equip_item_already_equipped(mock_db):
     user_repo = UserRepository(db=mock_db)
 
 
-    result = await user_repo.equip_item(user_id=12345, item_id='101')
+    result = await user_repo.equip_item(user_id=12345, item_id=101)
 
 
     assert result is True
@@ -210,7 +210,7 @@ async def test_remove_all_item_from_inventory(mock_db, sample_user):
 
     mock_db.users.update_one.assert_awaited_with(
         {'_id': sample_user.user_id},
-        {'$unset': {'inventory.101': ''}}
+        {'$unset': {f'inventory.{101}': ''}}
     )
 
 async def test_remove_item_from_inventory(mock_db, sample_user):
@@ -245,7 +245,7 @@ async def test_equip_item_failure_not_owned_or_no_user(mock_db):
     mock_db.users.update_one.return_value = MagicMock(matched_count=0)
     user_repo = UserRepository(db=mock_db)
 
-    result = await user_repo.equip_item(user_id=12345, item_id='999') # Item que não tem
+    result = await user_repo.equip_item(user_id=12345, item_id=999) # Item que não tem
 
     assert result is False
 
