@@ -40,7 +40,7 @@ def create_fake_user(user_id=1, coins=100, inventory=None, equipped=None):
         equipped_item_id=equipped,
         xp=0,
         status=UserStatus.ACTIVE,
-        joined_at=datetime.date.today()
+        joined_at=datetime.datetime.today()
     )
 
 
@@ -175,28 +175,11 @@ async def test_unequip_item_success(service, mock_user_repo):
     mock_user_repo.get_by_id.return_value = user
 
     # ACT
-    success, msg = await service.unequip_item(user_id=1, item_id=200)
+    success, msg = await service.unequip_item(user_id=1)
 
     # ASSERT
     assert success is True
     mock_user_repo.unequip_item.assert_awaited_with(1)
-
-
-@pytest.mark.asyncio
-async def test_unequip_item_fail_wrong_item(service, mock_user_repo):
-    """Cenário: Tenta desequipar um item que não está usando."""
-    # ARRANGE
-    user = create_fake_user(equipped=200)  # Está usando 200
-    mock_user_repo.get_by_id.return_value = user
-
-    # ACT
-    # Tenta tirar o item 500 (mas está usando o 200)
-    success, msg = await service.unequip_item(user_id=1, item_id=500)
-
-    # ASSERT
-    assert success is False
-    assert "Você não possuí item equipado." in msg
-    mock_user_repo.unequip_item.assert_not_called()
 
 
 @pytest.mark.asyncio
