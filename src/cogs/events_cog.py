@@ -4,8 +4,8 @@ from discord.ext import commands
 import discord
 from datetime import datetime
 
-from services.sage_service import SageService
-from services.mission_service import MissionService
+from src.services.sage_service import SageService
+from src.services.mission_service import MissionService
 from src.app.config import MISSION_CHANNEL_ID
 from src.database.models.user import UserModel, UserStatus
 from src.utils.embeds import MissionEmbeds, CodeSageEmbeds

@@ -1,7 +1,7 @@
 import logging
 from typing import Tuple
 
-from database.models.user import UserModel
+from src.database.models.user import UserModel
 from repositories.item_repository import ItemRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.level_rewards_repository import LevelRewardsRepository

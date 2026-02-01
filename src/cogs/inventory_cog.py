@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 
 from src.services.economy_service import EconomyService
-from utils.embeds import create_error_embed, create_info_embed, InventoryEmbeds
+from src.utils.embeds import create_error_embed, create_info_embed, InventoryEmbeds
 
 class InventoryCog(commands.Cog):
     """Comandos relacionados ao inventário (equipar, desequipar, listar)."""
