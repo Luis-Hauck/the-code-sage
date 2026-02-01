@@ -79,7 +79,7 @@ class AdminCog(commands.Cog):
             novo_rank (str): Novo rank a ser aplicado.
         """
         # verifica se é uma Thread
-        if not is_mission_channel(interaction):
+        if not await is_mission_channel(interaction):
             return
 
         await interaction.response.defer()
