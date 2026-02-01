@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from src.services.economy_service import EconomyService
+from src.services.user_service import UserService
 from utils.embeds import create_error_embed, create_info_embed, InventoryEmbeds
 
 class InventoryCog(commands.Cog):
@@ -14,14 +14,14 @@ class InventoryCog(commands.Cog):
             bot (commands.Bot): Instância principal do bot.
         """
         self.bot = bot
-        self.economy_service:EconomyService = bot.economy_service
+        self.user_service:UserService = bot.user_service
 
     async def equip_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
 
         user_id = interaction.user.id
 
         # 2. Buscamos o usuário no banco para ver o inventário dele
-        user_data = await self.economy_service.user_repo.get_by_id(user_id)
+        user_data = await self.user_service.user_repo.get_by_id(user_id)
 
         if not user_data or not user_data.inventory:
             return []  # Se não tem inventário, não sugere nada
@@ -30,7 +30,7 @@ class InventoryCog(commands.Cog):
         sugestoes = []
 
         for item_id in user_data.inventory:
-            item = await self.economy_service.item_repo.get_by_id(item_id)
+            item = await self.user_service.item_repo.get_by_id(item_id)
 
             # Se o item existe E o nome dele bate com o que o usuário está digitando
             if item and current.lower() in item.name.lower():
@@ -46,7 +46,7 @@ class InventoryCog(commands.Cog):
     async def equip_item(self, interaction: discord.Interaction, item: int):
         await interaction.response.defer(ephemeral=True)
 
-        sucess, message = await self.economy_service.equip_item(
+        sucess, message = await self.user_service.equip_item(
             user_id=interaction.user.id,
             item_id=item)
 
@@ -60,7 +60,7 @@ class InventoryCog(commands.Cog):
     async def unequip_item(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
-        sucess, message = await self.economy_service.unequip_item(interaction.user.id)
+        sucess, message = await self.user_service.unequip_item(interaction.user.id)
 
         embed = create_info_embed(title='Item desequipado com sucesso!', message='Bora juntar mais moedas para comprar mais um ;)') if sucess \
             else create_error_embed(title='Falha ao desequipar o item', message=message)
@@ -72,7 +72,7 @@ class InventoryCog(commands.Cog):
         await interaction.response.defer(ephemeral=True)
 
         # Buscamos dados do user
-        user_data = await self.economy_service.user_repo.get_by_id(interaction.user.id)
+        user_data = await self.user_service.user_repo.get_by_id(interaction.user.id)
 
         if not user_data or not user_data.inventory:
             without_data_embed = create_error_embed(title='Seu inventário está vazio! Ou você não existe? :)',
@@ -84,14 +84,14 @@ class InventoryCog(commands.Cog):
         # Verificamos se tem um item equipado
         equipped_item_name = "Nenhum item equipado"
         if user_data.equipped_item_id:
-            equipped_item = await self.economy_service.item_repo.get_by_id(user_data.equipped_item_id)
+            equipped_item = await self.user_service.item_repo.get_by_id(user_data.equipped_item_id)
             equipped_item_name = equipped_item.name
 
 
         items_for_display = []
 
         for item_id, quantity in user_data.inventory.items():
-            item = await self.economy_service.item_repo.get_by_id(item_id)
+            item = await self.user_service.item_repo.get_by_id(item_id)
             items_for_display.append({
                 'name': item.name,
                 'qty': quantity,
@@ -114,6 +114,3 @@ class InventoryCog(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(InventoryCog(bot))
-
-
-

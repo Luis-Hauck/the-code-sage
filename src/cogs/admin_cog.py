@@ -4,7 +4,6 @@ from discord.ext import commands
 
 import logging
 
-from src.database.models.user import UserStatus, UserModel
 from src.utils.helpers import is_mission_channel
 from src.utils.embeds import MissionEmbeds, create_error_embed, create_info_embed
 
@@ -30,39 +29,11 @@ class AdminCog(commands.Cog):
         """
         await interaction.response.defer(ephemeral=True)
 
-        # Acessa o repo de usuários
-        user_repo = self.bot.mission_service.user_repo
-
-        count = 0
-        ignored = 0
-
-        # Varre todos os membros do servidor
-        for member in interaction.guild.members:
-            # se for um bot ignoramos
-            if member.bot:
-                continue
-
-            user = UserModel(_id=member.id,
-                    username=member.name,
-                    xp=0,
-                    coins=0,
-                    inventory = {},
-                    equipped_item_id = None,
-                    status=UserStatus.ACTIVE,
-                    joined_at=member.joined_at,
-                    role_ids=[]
-                             )
-            # Verifica se já existe
-            exists = await user_repo.get_by_id(member.id)
-            if not exists:
-                await user_repo.create(user)
-
-                count += 1
-            else:
-                ignored += 1
+        # Chama o UserService para sincronizar
+        created_count, ignored_count = await self.bot.user_service.sync_guild_users(interaction.guild.members)
 
         await interaction.followup.send(
-            f"✅ Sincronização concluída!\n🆕 Cadastrados: {count}\n⏭️ Já existiam: {ignored}")
+            f"✅ Sincronização concluída!\n🆕 Cadastrados: {created_count}\n⏭️ Já existiam: {ignored_count}")
 
 
 
@@ -78,8 +49,8 @@ class AdminCog(commands.Cog):
             user (discord.Member): Usuário que será reavaliado.
             novo_rank (str): Novo rank a ser aplicado.
         """
-        # verifica se é uma Thread
-        if not is_mission_channel(interaction):
+        # verifica se é uma Thread (com await)
+        if not await is_mission_channel(interaction):
             return
 
         await interaction.response.defer()

@@ -2,7 +2,7 @@ import discord
 from discord import ui
 
 from src.utils.embeds import create_info_embed, create_error_embed
-from src.services.economy_service import EconomyService
+from src.services.user_service import UserService
 from src.database.models.item import ItemModel, ItemType
 
 
@@ -11,17 +11,17 @@ class ShopDropdown(ui.Select):
     Componente de menu suspenso (Select) para listagem de itens da loja.
 
     Renderiza opções com nome, preço, breve descrição e um emoji indicando o tipo
-    do item. Ao selecionar, aciona a compra via EconomyService.
+    do item. Ao selecionar, aciona a compra via UserService.
     """
-    def __init__(self, items: list[ItemModel], economy_service: EconomyService):
+    def __init__(self, items: list[ItemModel], user_service: UserService):
         """
         Inicializa o dropdown com uma lista de itens e o serviço de economia.
 
         Args:
             items (list[ItemModel]): Itens disponíveis para compra.
-            economy_service (EconomyService): Serviço responsável por processar a compra.
+            user_service (UserService): Serviço responsável por processar a compra.
         """
-        self.economy_service = economy_service
+        self.user_service = user_service
 
         options = []
         for item in items:
@@ -60,7 +60,7 @@ class ShopDropdown(ui.Select):
         Comportamento:
             - Lê o item selecionado.
             - Defer da resposta (ephemeral).
-            - Chama EconomyService.buy_item e envia um embed de sucesso/erro.
+            - Chama UserService.buy_item e envia um embed de sucesso/erro.
         """
 
         # self.values é uma lista de strings com os values selecionados.
@@ -69,7 +69,7 @@ class ShopDropdown(ui.Select):
         await interaction.response.defer(ephemeral=True)
 
         # Chama a lógica de negócio
-        success, message = await self.economy_service.buy_item(
+        success, message = await self.user_service.buy_item(
             user_id=interaction.user.id,
             item_id=selected_item_id,
             item_quantity=1
@@ -92,14 +92,14 @@ class ShopView(ui.View):
     timeout desativado (persistente) para que os botões continuem interativos
     até serem manualmente removidos/desativados.
     """
-    def __init__(self, items, economy_service: EconomyService):
+    def __init__(self, items, user_service: UserService):
         """
         Inicializa a view com os itens e o serviço de economia.
 
         Args:
             items (list[ItemModel]): Lista de itens disponíveis para compra.
-            economy_service (EconomyService): Serviço utilizado pelo dropdown para efetuar compras.
+            user_service (UserService): Serviço utilizado pelo dropdown para efetuar compras.
         """
         super().__init__(timeout=None)
         if items:
-            self.add_item(ShopDropdown(items, economy_service))
+            self.add_item(ShopDropdown(items, user_service))

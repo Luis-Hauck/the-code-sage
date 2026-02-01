@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class MissionRepository:
 
-    def __init__(self, db:Database):
+    def __init__(self, db: Database):
         # Cria a conexão com a coleção missions
         self.collection = db.missions
 
@@ -36,23 +36,23 @@ class MissionRepository:
             return False
 
         except Exception as e:
-            logger.error(f'Erro ao criar a missão de id{mission_model.mission_id}: {e}')
+            logger.error(f'Erro ao criar a missão de id {mission_model.mission_id}: {e}')
             return False
 
-    async def get_by_id(self, mission_id: int) -> MissionModel | None:
+    async def get_by_id(self, mission_id: int) -> Optional[MissionModel]:
         """Busca uma missão pelo ID.
 
         Args:
             mission_id (int): ID da missão.
 
         Returns:
-            MissionModel | None: MissionModel se encontrado, None se não encontrado ou em caso de erro.
+            Optional[MissionModel]: MissionModel se encontrado, None se não encontrado ou em caso de erro.
         """
         try:
             mission_data = await self.collection.find_one({'_id': mission_id})
 
             if not mission_data:
-                logger.info('Item não encontrado')
+                logger.info('Missão não encontrada')
                 return None
 
             return MissionModel(**mission_data)
@@ -80,12 +80,12 @@ class MissionRepository:
                 update_data['completed_at'] = completed_at
 
             result = await self.collection.update_one(
-                {'_id':mission_id},
+                {'_id': mission_id},
                 {'$set': update_data}
             )
 
             if result.matched_count > 0:
-                logger.info(f'A missão com ID: {mission_id} foi definida como {update_data['status']}.')
+                logger.info(f'A missão com ID: {mission_id} foi definida como {update_data["status"]}.')
                 return True
 
             logger.warning(f'Tentativa de atualizar uma missão inexistente: {mission_id}.')
@@ -95,7 +95,7 @@ class MissionRepository:
             logger.info(f'Erro ao atualizar a missão com ID:{mission_id}: {e}')
             return False
 
-    async def add_participant(self, mission_id:int, evaluator_model: EvaluatorModel) -> bool:
+    async def add_participant(self, mission_id: int, evaluator_model: EvaluatorModel) -> bool:
         """Adiciona um participante à missão, caso ainda não esteja.
 
         Args:
@@ -113,7 +113,7 @@ class MissionRepository:
                     'evaluators.user_id': {'$ne': evaluator_model.user_id}
                 },
                 {
-                    '$push':{'evaluators': evaluator_data}
+                    '$push': {'evaluators': evaluator_data}
                 }
 
             )
@@ -122,7 +122,7 @@ class MissionRepository:
                 logger.info(f'O participante {evaluator_model.user_id} foi adicionado a missão {mission_id}')
                 return True
 
-            mission_exists = await self.collection.count_documents({'_id':mission_id}, limit=1)
+            mission_exists = await self.collection.count_documents({'_id': mission_id}, limit=1)
 
             if mission_exists:
                 logger.info(f'O participante {evaluator_model.user_id} já estava participando da missão.')
@@ -132,11 +132,11 @@ class MissionRepository:
             return False
 
         except Exception as e:
-            logger.error(f'Falha ao adcionar o participante {evaluator_model.user_id} a missão {mission_id}: {e}')
+            logger.error(f'Falha ao adicionar o participante {evaluator_model.user_id} a missão {mission_id}: {e}')
             return False
 
 
-    async def update_evaluator(self,mission_id: int,evaluator_model: EvaluatorModel) -> bool:
+    async def update_evaluator(self, mission_id: int, evaluator_model: EvaluatorModel) -> bool:
         """Atualiza os dados de alguém que já foi avaliado.
 
         Args:
@@ -149,16 +149,16 @@ class MissionRepository:
         try:
 
             result = await self.collection.update_one(
-                {'_id':mission_id,
+                {'_id': mission_id,
                  'evaluators.user_id': evaluator_model.user_id
                  },
-            {
-                '$set':{
-                    'evaluators.$.level_at_time':evaluator_model.user_level_at_time,
-                    'evaluators.$.rank': evaluator_model.rank,
-                    'evaluators.$.coins_earned': evaluator_model.coins_earned,
-                    'evaluators.$.xp_earned': evaluator_model.xp_earned,
-                    'evaluators.$.evaluate_at': evaluator_model.evaluate_at
+                {
+                    '$set': {
+                        'evaluators.$.level_at_time': evaluator_model.user_level_at_time,
+                        'evaluators.$.rank': evaluator_model.rank,
+                        'evaluators.$.coins_earned': evaluator_model.coins_earned,
+                        'evaluators.$.xp_earned': evaluator_model.xp_earned,
+                        'evaluators.$.evaluate_at': evaluator_model.evaluate_at
 
                     }
                 }
@@ -168,9 +168,9 @@ class MissionRepository:
                 logger.info(f'O usuário {evaluator_model.user_id} teve os dados atualizados com sucesso! Na missão {mission_id}, recebendo {evaluator_model.xp_earned}xp e {evaluator_model.coins_earned} moedas')
                 return True
 
-            logger.warning(f'Falha ao atualziar a avaliação do usuário {evaluator_model.user_id} na missão {mission_id}')
+            logger.warning(f'Falha ao atualizar a avaliação do usuário {evaluator_model.user_id} na missão {mission_id}')
             return False
 
         except Exception as e:
-            logger.error(f'Erro ao tentar atualizar a avalição o usuário {evaluator_model.user_id} na missão {mission_id}: {e}')
+            logger.error(f'Erro ao tentar atualizar a avaliação do usuário {evaluator_model.user_id} na missão {mission_id}: {e}')
             return False

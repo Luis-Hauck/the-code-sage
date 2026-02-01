@@ -18,5 +18,5 @@ async def connect_to_database():
         return db
 
     except Exception as e:
-        logger.warning(f'Ocorreu um erro na criação do cleinet: {e}')
+        logger.warning(f'Ocorreu um erro na criação do cliente: {e}')
         raise

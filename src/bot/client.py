@@ -13,7 +13,7 @@ from src.repositories.missions_repository import MissionRepository
 from src.repositories.level_rewards_repository import LevelRewardsRepository
 from src.services.mission_service import MissionService
 from services.leveling_service import LevelingService
-from services.economy_service import EconomyService
+from src.services.user_service import UserService
 from src.services.sage_service import SageService
 
 
@@ -43,7 +43,7 @@ class TheCodeSageBot(commands.Bot):
         self.db = None
         self.mission_service = None
         self.leveling_service = None
-        self.economy_service = None
+        self.user_service = None
         self.sage_service = None
 
 
@@ -68,7 +68,7 @@ class TheCodeSageBot(commands.Bot):
         # inicializa os services
         self.leveling_service = LevelingService(self.user_repo, self.rewards_repo, self.item_repo)
         self.mission_service = MissionService(self.mission_repo, self.leveling_service,self.user_repo)
-        self.economy_service = EconomyService(self.user_repo, self.item_repo)
+        self.user_service = UserService(self.user_repo, self.item_repo)
         self.sage_service = SageService()
 
         logger.info("Services e Repositories inicializados com sucesso!")
@@ -120,5 +120,3 @@ class TheCodeSageBot(commands.Bot):
         await super().close()
 
         logger.info('Bot encerrado com sucesso!')
-
-

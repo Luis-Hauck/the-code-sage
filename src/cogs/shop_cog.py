@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import random
 
-from src.services.economy_service import EconomyService
+from src.services.user_service import UserService
 from src.utils.embeds import ShopEmbeds
 from src.views.shop_view import ShopView, create_error_embed
 from src.app.config import MOD_LOG_CHANNEL_ID
@@ -17,7 +17,7 @@ class ShopCog(commands.Cog):
             bot (commands.Bot): Instância do bot principal, usada para acessar repositórios e serviços.
         """
         self.bot = bot
-        self.economy_service:EconomyService = bot.economy_service
+        self.user_service:UserService = bot.user_service
 
 
     @app_commands.command(name="abrir_loja", description="[Admin] Cria a vitrine de itens neste canal")
@@ -31,7 +31,7 @@ class ShopCog(commands.Cog):
         await interaction.response.defer()
 
         # Buscamos 100 itens
-        all_items = await self.economy_service.item_repo.get_all()
+        all_items = await self.user_service.item_repo.get_all()
 
         if not all_items:
             mod_channel = interaction.guild.get_channel(MOD_LOG_CHANNEL_ID)
@@ -48,7 +48,7 @@ class ShopCog(commands.Cog):
         showcase_embed = ShopEmbeds.create_showcase()
 
         # gera o view
-        view = ShopView(shop_items, self.economy_service)
+        view = ShopView(shop_items, self.user_service)
 
         await interaction.followup.send(embed=showcase_embed, view=view)
 

@@ -11,10 +11,6 @@ logger = logging.getLogger(__name__)
 class UserRepository:
     """
     Repositório responsável por operações na coleção de usuários.
-
-    Este repositório encapsula as interações com o banco de dados relacionadas
-    a usuários, oferecendo métodos para criação, consulta, atualização de
-    status, manipulação de inventário e gerenciamento de cargos (roles).
     """
     def __init__(self, db: Database):
         """
@@ -26,7 +22,7 @@ class UserRepository:
         # Conexão com a coleção User
         self.collection = db.users
 
-    async def create(self, user_model:UserModel) -> bool:
+    async def create(self, user_model: UserModel) -> bool:
         """
         Cria um novo usuário no banco de dados.
 
@@ -71,7 +67,7 @@ class UserRepository:
                 {'_id': user_id},
                 {'$set': {'status': status}}
             )
-            if result.matched_count >0:
+            if result.matched_count > 0:
                 logger.info(f'Status do user {user_id} atualizado para {status}')
                 return True
 
@@ -83,7 +79,7 @@ class UserRepository:
             logger.error(f'Falha ao atualizar os status do user {user_id}: {e}')
             return False
 
-    async def add_xp_coins(self, user_id:int, xp:int, coins:int) -> Optional[UserModel]:
+    async def add_xp_coins(self, user_id: int, xp: int, coins: int) -> Optional[UserModel]:
         """
         Adiciona XP e moedas ao usuário pelo ID.
 
@@ -102,8 +98,8 @@ class UserRepository:
                 {'_id': user_id},
                 {
                     '$inc': {
-                    'xp':xp,
-                    'coins':coins
+                    'xp': xp,
+                    'coins': coins
                     }
                 },
                 return_document=ReturnDocument.AFTER
@@ -117,10 +113,10 @@ class UserRepository:
 
 
         except Exception as e:
-            logger.error(f'Falha ao incremenatar xp e moedas ao user {user_id}: {e}')
+            logger.error(f'Falha ao incrementar xp e moedas ao user {user_id}: {e}')
             return None
 
-    async def get_by_id(self, user_id:int) -> Optional[UserModel]:
+    async def get_by_id(self, user_id: int) -> Optional[UserModel]:
         """
         Busca um usuário pelo ID.
 
@@ -369,4 +365,3 @@ class UserRepository:
         except Exception as e:
             logger.error(f'Erro ao remover role: {e} do usuário {user_id}', exc_info=True)
             return False
-
