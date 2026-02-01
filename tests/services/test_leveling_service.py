@@ -74,7 +74,7 @@ def test_calculate_level_logic(service):
 async def test_grant_reward_no_change(service, mock_user_repo, mock_guild):
     """
     Cenário: Ganhou XP, mas sync_roles retornou False (não houve mudança de cargo).
-    Expectativa: Deve retornar (False, None).
+    Expectativa: Deve retornar (False, Nível atual).
     """
     # Setup do User
     user_fake = UserModel(_id=1, username='luis', xp=150, coins=10, role_ids=[], joined_at=datetime.datetime.now())
@@ -87,7 +87,7 @@ async def test_grant_reward_no_change(service, mock_user_repo, mock_guild):
 
     service.sync_roles.assert_called_once()  # Ele deve chamar para verificar
     assert result is False
-    assert level is None
+    assert level is 1
 
 
 @pytest.mark.asyncio
@@ -129,7 +129,7 @@ async def test_sync_roles_add_new_role(service, mock_rewards_repo, mock_guild, m
     role_obj = MagicMock(id=500, name="Mestre")
     mock_guild.get_role.return_value = role_obj
 
-    result = await service.sync_roles(user_id=123, nivel_atual=5, guild=mock_guild)
+    result = await service.sync_roles(user_id=123, current_level=5, guild=mock_guild)
 
     mock_member.add_roles.assert_awaited_once_with(role_obj)
     assert result is True  # Deve indicar que houve adição
@@ -151,7 +151,7 @@ async def test_sync_roles_already_has_role(service, mock_rewards_repo, mock_guil
     mock_rewards_repo.get_role_for_level.return_value = reward_fake
     mock_rewards_repo.get_all_reward_role_ids.return_value = [500]
 
-    result = await service.sync_roles(user_id=123, nivel_atual=5, guild=mock_guild)
+    result = await service.sync_roles(user_id=123, current_level=5, guild=mock_guild)
 
     mock_member.add_roles.assert_not_called()
     mock_member.remove_roles.assert_not_called()
@@ -182,7 +182,7 @@ async def test_sync_roles_replace_old_role(service, mock_rewards_repo, mock_guil
     role_new_obj = MagicMock(id=200)
     mock_guild.get_role.return_value = role_new_obj
 
-    result = await service.sync_roles(user_id=123, nivel_atual=2, guild=mock_guild)
+    result = await service.sync_roles(user_id=123, current_level=2, guild=mock_guild)
 
 
     # Verificamos a remoção (deve remover ID 100)
