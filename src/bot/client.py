@@ -12,8 +12,8 @@ from src.repositories.item_repository import ItemRepository
 from src.repositories.missions_repository import MissionRepository
 from src.repositories.level_rewards_repository import LevelRewardsRepository
 from src.services.mission_service import MissionService
-from services.leveling_service import LevelingService
-from services.economy_service import EconomyService
+from src.services.leveling_service import LevelingService
+from src.services.economy_service import EconomyService
 from src.services.sage_service import SageService
 
 
