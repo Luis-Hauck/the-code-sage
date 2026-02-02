@@ -4,9 +4,9 @@ from discord.ext import commands
 
 import logging
 
-from src.database.models.user import UserStatus, UserModel
+from src.database.models.mission import EvaluationRank
 from src.utils.helpers import is_mission_channel
-from src.utils.embeds import MissionEmbeds, create_error_embed, create_info_embed
+from src.utils.embeds import MissionEmbeds, create_error_embed
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ class AdminCog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="sync_users", description="Registra todos os membros atuais do server no banco de dados.")
+    @app_commands.guild_only()
     @app_commands.checks.has_permissions(administrator=True)
     async def sync_users(self, interaction: discord.Interaction):
         """
@@ -30,44 +31,28 @@ class AdminCog(commands.Cog):
         """
         await interaction.response.defer(ephemeral=True)
 
-        # Acessa o repo de usuários
-        user_repo = self.bot.mission_service.user_repo
+        # Prepara os dados dos membros para o service
+        members_data = [
+            {
+                "id": member.id,
+                "name": member.name,
+                "joined_at": member.joined_at,
+                "bot": member.bot
+            }
+            for member in interaction.guild.members
+        ]
 
-        count = 0
-        ignored = 0
-
-        # Varre todos os membros do servidor
-        for member in interaction.guild.members:
-            # se for um bot ignoramos
-            if member.bot:
-                continue
-
-            user = UserModel(_id=member.id,
-                    username=member.name,
-                    xp=0,
-                    coins=0,
-                    inventory = {},
-                    equipped_item_id = None,
-                    status=UserStatus.ACTIVE,
-                    joined_at=member.joined_at,
-                    role_ids=[]
-                             )
-            # Verifica se já existe
-            exists = await user_repo.get_by_id(member.id)
-            if not exists:
-                await user_repo.create(user)
-
-                count += 1
-            else:
-                ignored += 1
+        # Chama o UserService para sincronizar
+        created, ignored = await self.bot.user_service.sync_guild_users(members_data)
 
         await interaction.followup.send(
-            f"✅ Sincronização concluída!\n🆕 Cadastrados: {count}\n⏭️ Já existiam: {ignored}")
+            f"✅ Sincronização concluída!\n🆕 Cadastrados: {created}\n⏭️ Já existiam: {ignored}")
 
 
 
     @app_commands.command(name="ajustar_avaliacao",
                           description="[ADM] Ajusta o rank de uma missão.")
+    @app_commands.guild_only()
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(user='O usuário que será reavaliado.', novo_rank='Novo rank que  usuário vai receber!')
     async def adjust_rank(self, interaction: discord.Interaction, user:discord.Member, novo_rank: str):
@@ -80,6 +65,14 @@ class AdminCog(commands.Cog):
         """
         # verifica se é uma Thread
         if not await is_mission_channel(interaction):
+            return
+
+        # Validação antecipada do Rank
+        if not EvaluationRank.get_or_none(novo_rank):
+            await interaction.response.send_message(
+                embed=create_error_embed("Rank Inválido", f"O rank '{novo_rank}' não existe. Use: S, A, B, C, D, E."),
+                ephemeral=True
+            )
             return
 
         await interaction.response.defer()

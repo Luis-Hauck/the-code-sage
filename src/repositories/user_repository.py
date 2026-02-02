@@ -1,8 +1,8 @@
 from pymongo.database import Database
 import logging
 from pymongo import ReturnDocument
-from pymongo.errors import DuplicateKeyError
-from typing import Optional
+from pymongo.errors import DuplicateKeyError, BulkWriteError
+from typing import Optional, List, Set
 
 from src.database.models.user import UserModel, UserStatus
 
@@ -52,6 +52,54 @@ class UserRepository:
         except Exception as e:
             logger.error(f'Erro inesperado ao criar o usuário: {e}', exc_info=True)
             return False
+
+    async def create_many(self, users: List[UserModel]) -> int:
+        """
+        Cria múltiplos usuários de uma vez.
+
+        Args:
+            users (List[UserModel]): Lista de modelos de usuário.
+
+        Returns:
+            int: Quantidade de usuários inseridos com sucesso.
+        """
+        if not users:
+            return 0
+
+        try:
+            users_data = [user.model_dump(by_alias=True) for user in users]
+            # ordered=False continua inserindo mesmo se um falhar (ex: duplicado)
+            result = await self.collection.insert_many(users_data, ordered=False)
+            count = len(result.inserted_ids)
+            logger.info(f'{count} usuários cadastrados em lote.')
+            return count
+
+        except BulkWriteError as bwe:
+            # Recupera quantos foram inseridos com sucesso antes/durante o erro
+            inserted_count = bwe.details.get('nInserted', 0)
+            logger.warning(f'Erro parcial no lote. Inseridos: {inserted_count}. Erro: {bwe}')
+            return inserted_count
+
+        except Exception as e:
+            logger.error(f'Erro inesperado ao criar usuários em lote: {e}')
+            return 0
+
+    async def get_all_ids(self) -> Set[int]:
+        """
+        Retorna um conjunto com os IDs de todos os usuários cadastrados.
+
+        Returns:
+            Set[int]: Conjunto de IDs.
+        """
+        try:
+            cursor = self.collection.find({}, {'_id': 1})
+            ids = set()
+            async for doc in cursor:
+                ids.add(doc['_id'])
+            return ids
+        except Exception as e:
+            logger.error(f'Erro ao buscar todos os IDs: {e}')
+            return set()
 
 
     async def update_status(self, user_id: int, status: UserStatus) -> bool:
