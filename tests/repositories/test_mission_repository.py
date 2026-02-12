@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
 from pymongo.errors import DuplicateKeyError
 
-from repositories.missions_repository import MissionRepository
+from src.repositories.missions_repository import MissionRepository
 from src.database.models.mission import MissionModel, MissionStatus, EvaluationRank, EvaluatorModel
 
 pytestmark = pytest.mark.asyncio

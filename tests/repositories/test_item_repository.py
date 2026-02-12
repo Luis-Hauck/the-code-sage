@@ -4,7 +4,7 @@ from pymongo.errors import DuplicateKeyError
 
 from src.database.models.item import ItemModel, ItemType
 from src.database.models.effects import CoinBoostPassive, GiveRoleEffect, XpBoostPassive, AnyEffect
-from repositories.item_repository import ItemRepository
+from src.repositories.item_repository import ItemRepository
 
 pytestmark = pytest.mark.asyncio
 

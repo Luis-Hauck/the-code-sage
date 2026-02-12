@@ -1,7 +1,7 @@
 import pytest
 
 from src.database.models.level_rewards import LevelRewardsModel
-from repositories.level_rewards_repository import LevelRewardsRepository
+from src.repositories.level_rewards_repository import LevelRewardsRepository
 
 
 pytestmark = pytest.mark.asyncio

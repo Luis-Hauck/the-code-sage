@@ -3,7 +3,7 @@ from typing import Dict, Tuple, Optional, Any
 from datetime import datetime
 import asyncio
 
-from repositories.user_repository import UserRepository
+from src.repositories.user_repository import UserRepository
 from src.repositories.missions_repository import MissionRepository
 from src.database.models.mission import MissionStatus, MissionModel, EvaluatorModel, EvaluationRank
 from src.services.leveling_service import LevelingService

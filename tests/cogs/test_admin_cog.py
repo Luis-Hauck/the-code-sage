@@ -13,12 +13,11 @@ def mock_bot():
     bot = MagicMock()
     # Hierarquia: bot -> mission_service -> user_repo / adjust_evaluation
     bot.mission_service = MagicMock()
-    bot.mission_service.user_repo = MagicMock()
+    bot.user_service = MagicMock() # Added user_service
 
     # Configura métodos async
-    bot.mission_service.user_repo.create = AsyncMock()
-    bot.mission_service.user_repo.get_by_id = AsyncMock()
     bot.mission_service.adjust_evaluation = AsyncMock()
+    bot.user_service.sync_guild_users = AsyncMock() # Added sync_guild_users
 
     return bot
 
@@ -49,7 +48,9 @@ async def test_sync_users_mixed_scenario(cog, mock_bot, mock_interaction):
     - 1 Humano existente (Deve ignorar)
     - 1 Bot (Deve pular)
     """
-    repo = mock_bot.mission_service.user_repo
+    # Configura o retorno do Service
+    # (created_count, ignored_count)
+    mock_bot.user_service.sync_guild_users.return_value = (1, 1)
 
     # Membro Novo
     new_human = MagicMock(spec=discord.Member)
@@ -72,23 +73,10 @@ async def test_sync_users_mixed_scenario(cog, mock_bot, mock_interaction):
 
     mock_interaction.guild.members = [new_human, old_human, robot]
 
-    # get_by_id chamado para 101 retorna None (Novo)
-    # get_by_id chamado para 102 retorna Objeto (Existente)
-    async def get_by_id_side_effect(user_id):
-        if user_id == 101: return None
-        if user_id == 102: return MagicMock()  # Usuário existe
-        return None
-
-    repo.get_by_id.side_effect = get_by_id_side_effect
-
     await cog.sync_users.callback(cog, mock_interaction)
 
-    # Create deve ser chamado APENAS 1 vez (para o new_human)
-    repo.create.assert_awaited_once()
-
-    # Verifica argumentos do create
-    args, _ = repo.create.await_args
-    assert args[0].user_id == 101
+    # Verifica se o service foi chamado corretamente
+    mock_bot.user_service.sync_guild_users.assert_awaited_once()
 
     # Verifica a mensagem final (deve contar 1 novo e 1 ignorado)
     mock_interaction.followup.send.assert_awaited_once()
@@ -122,7 +110,8 @@ async def test_adjust_rank_success(mock_is_channel, cog, mock_bot, mock_interact
     target_user.display_name = "TargetUser"
 
     # 2. Execução
-    await cog.adjust_rank.callback(cog, mock_interaction, target_user, fake_data['new_rank'])
+    # Passamos "S" (string) para simular o input real
+    await cog.adjust_rank.callback(cog, mock_interaction, target_user, "S")
 
     # 3. Asserções
     # Verificou se é canal de missão?
@@ -135,7 +124,7 @@ async def test_adjust_rank_success(mock_is_channel, cog, mock_bot, mock_interact
     mock_bot.mission_service.adjust_evaluation.assert_awaited_with(
         mock_interaction.channel.id,  # 100
         target_user.id,  # 555
-        fake_data['new_rank'],
+        "S",
         mock_interaction.guild
     )
 

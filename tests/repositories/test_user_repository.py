@@ -5,7 +5,7 @@ from pymongo.errors import DuplicateKeyError
 from pymongo import ReturnDocument
 
 from src.database.models.user import UserModel, UserStatus
-from repositories.user_repository import UserRepository
+from src.repositories.user_repository import UserRepository
 
 pytestmark = pytest.mark.asyncio
 
