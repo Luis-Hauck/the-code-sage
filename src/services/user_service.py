@@ -142,6 +142,29 @@ class UserService:
         await self.user_repo.unequip_item(user_id)
         return True, "Item desequipado com sucesso!"
 
+    async def add_item_to_inventory(self, user_id: int, item_id: int, quantity: int) -> bool:
+        """Adiciona um item ao inventário do usuário."""
+        return await self.user_repo.add_item_to_inventory(user_id, item_id, quantity)
+
+    async def remove_item_from_inventory(self, user_id: int, item_id: int, quantity: int) -> bool:
+        """Remove um item do inventário do usuário."""
+        return await self.user_repo.remove_item_from_inventory(user_id, item_id, quantity)
+
+    async def has_balance(self, user_id: int, amount: int) -> bool:
+        """Verifica se o usuário tem saldo suficiente."""
+        user = await self.user_repo.get_by_id(user_id)
+        if not user:
+            return False
+        return user.coins >= amount
+
+    async def debit_coins(self, user_id: int, amount: int) -> bool:
+        """Debita moedas do usuário. Retorna True se sucesso."""
+        if amount < 0:
+            return False # Segurança básica
+
+        updated_user = await self.user_repo.add_xp_coins(user_id=user_id, xp=0, coins=-amount)
+        return updated_user is not None
+
     async def sync_guild_users(self, members_data: List[Dict[str, Any]]) -> Tuple[int, int]:
         """
         Sincroniza os usuários da guilda com o banco de dados.

@@ -1,22 +1,21 @@
 import logging
 from typing import Tuple
 
-from src.repositories.user_repository import UserRepository
 from src.repositories.item_repository import ItemRepository
-from src.database.models.item import ItemType
+from src.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 
 class EconomyService:
-    """Regras de economia: compras e manipulação de itens equipáveis."""
-    def __init__(self, user_repo: UserRepository, item_repo: ItemRepository):
+    """Regras de economia: compras e transações."""
+    def __init__(self, user_service: UserService, item_repo: ItemRepository):
         """Inicializa o serviço de economia.
 
         Args:
-            user_repo (UserRepository): Repositório de usuários.
-            item_repo (ItemRepository): Repositório de itens.
+            user_service (UserService): Serviço de usuário para manipular saldo/inventário.
+            item_repo (ItemRepository): Repositório de itens (para consulta de preço/existência).
         """
-        self.user_repo = user_repo
+        self.user_service = user_service
         self.item_repo = item_repo
 
     async def buy_item(self, user_id: int, item_id: int, item_quantity: int) -> Tuple[bool, str]:
@@ -31,92 +30,33 @@ class EconomyService:
             Tuple[bool, str]: (True/False, Mensagem)
         """
 
-        # Buscamos os dados do item/usuário
+        # Busca dados do item
         item = await self.item_repo.get_by_id(item_id)
-        user = await self.user_repo.get_by_id(user_id)
-
-
         if not item:
             return False, f'Item {item_id} não encontrado.'
 
-        if not user:
-            return False, f'Usuário {user_id} não encontrado.'
-
+        # Verifica se o usuário tem saldo suficiente usando UserService
         total_price = item.price * item_quantity
+        has_funds = await self.user_service.has_balance(user_id, total_price)
 
-        # Verificamos se usuário tem dinheiro
-        if user.coins < total_price:
-            return False, f'Saldo insuficiente! O item {item.name} custa: {item.price}X{item_quantity}={total_price} moeda(s) e você tem {user.coins} moeda(s)'
+        if not has_funds:
+            # Para mensagem detalhada, precisaríamos saber o saldo, mas has_balance é booleano.
+            # Podemos assumir que a verificação falhou.
+            # Se quisermos mensagem detalhada, teríamos que buscar o user, mas EconomyService não deve.
+            return False, f'Saldo insuficiente! O item custa {total_price}.'
 
-        # Desconta as moedas
-        new_balance = await self.user_repo.add_xp_coins(user_id=user_id,
-                                                        xp=0,
-                                                        coins=-total_price
-                                                        )
+        # Realiza a transação
+        # 1. Debita moedas
+        debit_success = await self.user_service.debit_coins(user_id, total_price)
+        if not debit_success:
+            return False, 'Erro ao processar o pagamento!'
 
-        if not new_balance:
-            return False, 'Erro ao processar a compra!'
-
-        # Adiciona o item ao inventário
-        await self.user_repo.add_item_to_inventory(user_id, item_id, item_quantity)
+        # 2. Adiciona item
+        add_success = await self.user_service.add_item_to_inventory(user_id, item_id, item_quantity)
+        if not add_success:
+            # Rollback seria ideal aqui, mas por enquanto vamos logar erro crítico
+            logger.error(f"CRITICAL: User {user_id} paid {total_price} but item {item_id} was not added!")
+            return False, 'Erro ao entregar o item. Contate o suporte.'
 
         logger.info(f"User {user_id} comprou {item.name} - {item_quantity}X por {total_price} moeda(s)")
-        return True, f'Voces comprou {item.name} com sucesso!'
-
-    async def equip_item(self, user_id: int, item_id: int) -> Tuple[bool, str]:
-        """Equipa um item que está no inventário do usuário.
-
-        Args:
-            user_id (int): ID do usuário que equipará o item.
-            item_id (int): ID do item a ser equipado.
-
-        Returns:
-            Tuple[bool, str]: (True/False, mensagem)
-        """
-
-        user = await self.user_repo.get_by_id(user_id)
-        item = await self.item_repo.get_by_id(item_id)
-        if not user:
-            return False, f"Usuário não encontrado."
-
-        # Busca detalhes do item para ver o TIPO
-        item = await self.item_repo.get_by_id(item_id)
-        if not item:
-            return False, "Item não existe no banco de dados."
-
-        # Verifica se ele realmente tem o item
-        if item_id not in user.inventory:
-            return False, "Você não possui este item. Compre-o primeiro!"
-
-        # Verificamos se é do tipo "equipável"
-        if item.item_type != ItemType.EQUIPPABLE:
-            return False, f"O item '{item.name}' não pode ser equipado (Tipo: {item.item_type.value})."
-
-
-        # Equipa o item
-        await self.user_repo.equip_item(user_id, item_id)
-
-        return True, "Item equipado com sucesso!"
-
-    async def unequip_item(self,user_id: int) -> Tuple[bool, str]:
-        """Desequipa o item atualmente equipado pelo usuário.
-
-        Args:
-            user_id (int): ID do usuário que terá o item desequipado.
-
-        Returns:
-            Tuple[bool, str]: (True/False, mensagem)
-        """
-        user = await self.user_repo.get_by_id(user_id)
-        if not user:
-            return False, f"Usuário não encontrado para desequipar o item."
-
-        await self.user_repo.unequip_item(user_id)
-        return True, "Item desequipado com sucesso!"
-
-
-
-
-
-
-
+        return True, f'Você comprou {item.name} com sucesso!'

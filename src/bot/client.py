@@ -70,9 +70,10 @@ class TheCodeSageBot(commands.Bot):
         # inicializa os services
         self.leveling_service = LevelingService(self.user_repo, self.rewards_repo, self.item_repo)
         self.mission_service = MissionService(self.mission_repo, self.leveling_service,self.user_repo)
-        self.economy_service = EconomyService(self.user_repo, self.item_repo)
-        self.sage_service = SageService()
+        # UserService deve ser inicializado antes de EconomyService
         self.user_service = UserService(self.user_repo, self.item_repo, self.leveling_service)
+        self.economy_service = EconomyService(self.user_service, self.item_repo)
+        self.sage_service = SageService()
 
         logger.info("Services e Repositories inicializados com sucesso!")
 

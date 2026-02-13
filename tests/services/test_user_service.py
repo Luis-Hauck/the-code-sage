@@ -4,6 +4,7 @@ from datetime import datetime
 
 from src.services.user_service import UserService
 from src.database.models.user import UserModel, UserStatus
+from src.database.models.item import ItemModel, ItemType
 
 @pytest.fixture
 def mock_user_repo():
@@ -12,6 +13,7 @@ def mock_user_repo():
     repo.create_many = AsyncMock()
     repo.get_by_id = AsyncMock()
     repo.equip_item = AsyncMock()
+    repo.unequip_item = AsyncMock()
     return repo
 
 @pytest.fixture
@@ -58,12 +60,9 @@ async def test_equip_item_success(service, mock_user_repo, mock_item_repo):
     user.inventory = {1: 1} # Item ID 1, Qty 1
     mock_user_repo.get_by_id.return_value = user
 
-    item = MagicMock()
+    item = MagicMock(spec=ItemModel)
     item.item_id = 1
-    item.item_type.value = "equipavel" # Simulando enum
-    # Mockando a validação do tipo Enum
-    from src.database.models.item import ItemType
-    item.item_type = ItemType.EQUIPPABLE
+    item.item_type = ItemType.EQUIPPABLE # Uso direto do enum correto
 
     mock_item_repo.get_by_id.return_value = item
 
@@ -93,3 +92,39 @@ async def test_equip_item_not_owned(service, mock_user_repo, mock_item_repo):
     assert success is False
     assert "não possui" in msg
     mock_user_repo.equip_item.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_equip_item_fail_not_equippable(service, mock_user_repo, mock_item_repo):
+    # Setup
+    user = MagicMock(spec=UserModel)
+    user.inventory = {1: 1}
+    mock_user_repo.get_by_id.return_value = user
+
+    item = MagicMock(spec=ItemModel)
+    item.item_id = 1
+    item.name = "Poção"
+    item.item_type = ItemType.CONSUMABLE # Não equipável
+
+    mock_item_repo.get_by_id.return_value = item
+
+    # Execução
+    success, msg = await service.equip_item(user_id=123, item_id=1)
+
+    # Asserções
+    assert success is False
+    assert "não pode ser equipado" in msg
+    mock_user_repo.equip_item.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_unequip_item_success(service, mock_user_repo):
+    # Setup
+    user = MagicMock(spec=UserModel)
+    mock_user_repo.get_by_id.return_value = user
+
+    # Execução
+    success, msg = await service.unequip_item(user_id=123)
+
+    # Asserções
+    assert success is True
+    assert "desequipado com sucesso" in msg
+    mock_user_repo.unequip_item.assert_awaited_once_with(123)
