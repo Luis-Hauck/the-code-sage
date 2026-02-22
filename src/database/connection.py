@@ -15,6 +15,9 @@ async def connect_to_database():
         #  Cria o arquivo temporário para o certifacado
         pem_path = await download_direct_cert(CLIENT_PEM_URL, ".pem")
 
+        if not pem_path:
+            logger.warning("Links dos certificados não configurados nas variáveis de ambiente!")
+
         mongo_uri = MONGO_URI
 
         if mongo_uri:
