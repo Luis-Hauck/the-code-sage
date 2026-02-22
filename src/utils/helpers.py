@@ -7,6 +7,8 @@ from src.utils.embeds import create_error_embed
 
 
 logger = logging.getLogger(__name__)
+# Silencia o log de requisições do httpx
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 async def is_mission_channel(interaction: discord.Interaction) -> bool:
     """
@@ -34,6 +36,8 @@ async def is_mission_channel(interaction: discord.Interaction) -> bool:
 async def download_direct_cert(url: str, suffix: str):
     if not url:
         return None
+    display_url = f"{url[:35]}... (URL Protegida)"
+    logger.info(f"Iniciando download de: {display_url}")
     try:
         # 'follow_redirects=True' garante que o Python siga o link seguro até o arquivo final
         async with httpx.AsyncClient(follow_redirects=True) as client:

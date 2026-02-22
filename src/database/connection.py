@@ -19,7 +19,7 @@ async def connect_to_database():
             logger.warning("Links dos certificados não configurados nas variáveis de ambiente!")
 
         mongo_uri = MONGO_URI
-
+        host = mongo_uri.split("@")[-1].split("/")[0]
         if mongo_uri:
 
             # Configura a conexão base
@@ -44,13 +44,12 @@ async def connect_to_database():
             client = AsyncMongoClient(**connection_kwargs)
 
             await client.admin.command('ping')
-            host = mongo_uri.split("@")[-1].split("/")[0]
             logger.info(f'Conectado com sucesso ao host {host}!')
 
             db = client.get_database(DATABASE_NAME)
             return db
         else:
-            logger.warning(f'Falha ao conectar a uri: {mongo_uri}')
+            logger.warning(f'Falha ao conectar ao host: {host}')
             return None
     except Exception as e:
         logger.error(f'Ocorreu um erro na criação do cleinet: {e}')
