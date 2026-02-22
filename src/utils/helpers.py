@@ -1,6 +1,12 @@
 import discord
+import httpx
+import logging
+import tempfile
 from src.app.config import MISSION_CHANNEL_ID
 from src.utils.embeds import create_error_embed
+
+
+logger = logging.getLogger(__name__)
 
 async def is_mission_channel(interaction: discord.Interaction) -> bool:
     """
@@ -23,3 +29,21 @@ async def is_mission_channel(interaction: discord.Interaction) -> bool:
         return False
 
     return True
+
+
+async def download_direct_cert(url: str, suffix: str):
+    if not url:
+        return None
+    try:
+        # 'follow_redirects=True' garante que o Python siga o link seguro até o arquivo final
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+            temp_file.write(response.content)
+            temp_file.close()
+            return temp_file.name
+    except Exception as e:
+        logger.error(f"Erro ao baixar certificado com Hash: {e}")
+        return None
