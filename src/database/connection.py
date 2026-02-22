@@ -1,7 +1,7 @@
 from pymongo import AsyncMongoClient
 import logging
 from src.utils.helpers import download_direct_cert
-from src.app.config import DATABASE_NAME, MONGO_URI
+from src.app.config import DATABASE_NAME, MONGO_URI, CLIENT_PEM_URL
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ async def connect_to_database():
         logger.info("Autenticando com credenciais e certificados seguros (mTLS)...")
 
         #  Cria o arquivo temporário para o certifacado
-        pem_path = await download_direct_cert("MONGO_CLIENT_PEM", ".pem")
+        pem_path = await download_direct_cert(CLIENT_PEM_URL, ".pem")
 
         mongo_uri = MONGO_URI
 
