@@ -38,7 +38,6 @@ async def download_direct_cert(url: str, suffix: str):
         # 'follow_redirects=True' garante que o Python siga o link seguro até o arquivo final
         async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.get(url)
-            response.raise_for_status()
 
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
             temp_file.write(response.content)

@@ -44,7 +44,8 @@ async def connect_to_database():
             client = AsyncMongoClient(**connection_kwargs)
 
             await client.admin.command('ping')
-            logger.info(f'Conectado com sucesso em: {mongo_uri}')
+            host = mongo_uri.split("@")[-1].split("/")[0]
+            logger.info(f'Conectado com sucesso ao host {host}!')
 
             db = client.get_database(DATABASE_NAME)
             return db
