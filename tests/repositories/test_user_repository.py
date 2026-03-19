@@ -1,11 +1,11 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, BulkWriteError
 from pymongo import ReturnDocument
 
 from src.database.models.user import UserModel, UserStatus
-from repositories.user_repository import UserRepository
+from src.repositories.user_repository import UserRepository
 
 pytestmark = pytest.mark.asyncio
 
@@ -307,3 +307,103 @@ async def test_remove_role(mock_db, sample_user):
         {'_id': sample_user.user_id},
         {'$pull': {'role_ids': 1}}
     )
+
+
+def _build_user_batch(sample_user: UserModel) -> list[UserModel]:
+    """Cria lote de usuários reutilizando o modelo base do fixture."""
+    return [
+        sample_user.model_copy(update={'user_id': 2001, 'username': 'Frodo'}),
+        sample_user.model_copy(update={'user_id': 2002, 'username': 'Sam'}),
+    ]
+
+
+async def test_create_many_returns_zero_when_empty_list(mock_db):
+    """Retorna 0 e não chama insert_many quando a lista é vazia."""
+    user_repo = UserRepository(db=mock_db)
+
+    result = await user_repo.create_many(users=[])
+
+    assert result == 0
+    mock_db.users.insert_many.assert_not_awaited()
+
+
+async def test_create_many_success(mock_db, sample_user):
+    """Insere em lote e retorna a quantidade de IDs inseridos."""
+    users = _build_user_batch(sample_user)
+    mock_db.users.insert_many.return_value = MagicMock(inserted_ids=[2001, 2002])
+    user_repo = UserRepository(db=mock_db)
+
+    result = await user_repo.create_many(users=users)
+
+    assert result == 2
+    expected_data = [user.model_dump(by_alias=True) for user in users]
+    mock_db.users.insert_many.assert_awaited_with(expected_data, ordered=False)
+
+
+async def test_create_many_partial_bulk_error_returns_ninserted(mock_db, sample_user):
+    """Em erro parcial de bulk, retorna nInserted."""
+    users = _build_user_batch(sample_user)
+    mock_db.users.insert_many.side_effect = BulkWriteError(
+        {
+            'writeErrors': [{'index': 1, 'code': 11000, 'errmsg': 'duplicate key'}],
+            'nInserted': 1
+        }
+    )
+    user_repo = UserRepository(db=mock_db)
+
+    result = await user_repo.create_many(users=users)
+
+    assert result == 1
+
+
+async def test_create_many_unexpected_error_returns_zero(mock_db, sample_user):
+    """Em exceção inesperada durante insert_many, retorna 0."""
+    users = _build_user_batch(sample_user)
+    mock_db.users.insert_many.side_effect = Exception('connection lost')
+    user_repo = UserRepository(db=mock_db)
+
+    result = await user_repo.create_many(users=users)
+
+    assert result == 0
+
+
+class _AsyncCursor:
+    """Cursor assíncrono simples para simular retorno do find."""
+
+    def __init__(self, docs):
+        self._iterator = iter(docs)
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self._iterator)
+        except StopIteration:
+            raise StopAsyncIteration
+
+
+async def test_get_all_ids_success(mock_db, sample_user):
+    """Retorna set de IDs únicos encontrados na coleção."""
+    docs = [
+        {'_id': sample_user.user_id},
+        {'_id': sample_user.user_id},
+        {'_id': 99999},
+    ]
+    mock_db.users.find = MagicMock(return_value=_AsyncCursor(docs))
+    user_repo = UserRepository(db=mock_db)
+
+    result = await user_repo.get_all_ids()
+
+    assert result == {sample_user.user_id, 99999}
+    mock_db.users.find.assert_called_once_with({}, {'_id': 1})
+
+
+async def test_get_all_ids_returns_empty_set_on_error(mock_db):
+    """Em erro ao consultar IDs, retorna set vazio."""
+    mock_db.users.find = MagicMock(side_effect=Exception('query failed'))
+    user_repo = UserRepository(db=mock_db)
+
+    result = await user_repo.get_all_ids()
+
+    assert result == set()
