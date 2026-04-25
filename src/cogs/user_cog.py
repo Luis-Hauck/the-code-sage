@@ -78,7 +78,7 @@ class UserCog(commands.Cog):
         for item in items:
             if current.lower() in item['name'].lower():
                 suggestions.append(
-                    app_commands.Choice(name=item['name'], value=str(item['item_id']))
+                    app_commands.Choice(name=item['name'], value=str(item['id']))
                 )
 
         return suggestions[:25]
