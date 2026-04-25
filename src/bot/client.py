@@ -46,6 +46,7 @@ class TheCodeSageBot(commands.Bot):
         self.leveling_service = None
         self.economy_service = None
         self.sage_service = None
+        self.user_service = None
 
 
     async def setup_hook(self):
@@ -69,9 +70,10 @@ class TheCodeSageBot(commands.Bot):
         # inicializa os services
         self.leveling_service = LevelingService(self.user_repo, self.rewards_repo, self.item_repo)
         self.mission_service = MissionService(self.mission_repo, self.leveling_service,self.user_repo)
-        self.economy_service = EconomyService(self.user_repo, self.item_repo)
-        self.sage_service = SageService()
         self.user_service = UserService(self.user_repo, self.item_repo, self.leveling_service)
+        self.economy_service = EconomyService(self.user_service, self.item_repo)
+        self.sage_service = SageService()
+
 
         logger.info("Services e Repositories inicializados com sucesso!")
 
