@@ -81,6 +81,15 @@ Antes de começar, verifique se você atende aos seguintes requisitos:
 
 Contribuições são sempre bem-vindas! Veja o arquivo [CONTRIBUTING.md](docs/CONTRIBUTING.md)  para saber como começar.
 
+## 📚 Documentação
+
+A documentação do projeto fica na pasta `docs/`. Para começar, leia:
+- Documentação principal: [docs/README.md](docs/README.md)
+- Exemplo de página: [docs/exemplos/primeiros-passos.md](docs/exemplos/primeiros-passos.md)
+- Visão Geral: [docs/conceitos/visao-geral.md](docs/conceitos/visao-geral.md)
+- Guias (tutoriais): [docs/guias/README.md](docs/guias/README.md)
+- Referências (por componente): [docs/referencias/README.md](docs/referencias/README.md)
+
 ## 📢 Comunidade
 
 Quer ver o bot funcionando na prática, tirar dúvidas ou dar sugestões?
