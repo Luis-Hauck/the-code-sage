@@ -14,7 +14,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.12"
+python = "~3.12.2"
 discord-py = "^2.3.2"
 python-dotenv = "^1.0.1"
 pydantic = "^2.11.7"
